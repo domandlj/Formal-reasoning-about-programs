@@ -2,8 +2,7 @@
 
   Juan S. Domandl
   2022
-  Abstract Data Types, specification and existential types.
-
+  Semantics of Arith exps, stack machine compiling 
 -}
 
 module Interpreters where
