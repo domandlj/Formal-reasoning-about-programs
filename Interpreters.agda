@@ -222,12 +222,12 @@ exec-p = exec p (empty ℕ)
 -- This fact is general.
 
 
-compile'-correctnes : ∀ (e : Arith) (σ : Σ) (s : Stack ℕ) (c : Program)
+compile'-correctness : ∀ (e : Arith) (σ : Σ) (s : Stack ℕ) (c : Program)
   
   ------------------------------------------------------
   → exec (compile' e σ c) s ≡ exec c (pushN (⟦ e ⟧ σ) s)
 
-compile'-correctnes (CONST n) σ s c = 
+compile'-correctness (CONST n) σ s c = 
   begin
       exec (compile' (CONST n) σ c) s 
     ≡⟨⟩
@@ -238,7 +238,7 @@ compile'-correctnes (CONST n) σ s c =
       exec c (pushN (⟦ (CONST n) ⟧ σ) s) 
   ∎
 
-compile'-correctnes (VAR x) σ s c = 
+compile'-correctness (VAR x) σ s c = 
   begin
       exec (compile' (VAR x) σ c) s 
     ≡⟨⟩
@@ -249,14 +249,14 @@ compile'-correctnes (VAR x) σ s c =
       exec c (pushN (⟦ (CONST (σ x)) ⟧ σ) s ) 
   ∎
 
-compile'-correctnes (e1 PLUS e2) σ s c =
+compile'-correctness (e1 PLUS e2) σ s c =
   begin
       exec (compile' (e1 PLUS e2) σ c) s 
     ≡⟨⟩
       exec (compile' e1 σ (compile' e2 σ (ADD ∷ c))) s
-    ≡⟨ compile'-correctnes e1 σ s (compile' e2 σ (ADD ∷ c)) ⟩
+    ≡⟨ compile'-correctness e1 σ s (compile' e2 σ (ADD ∷ c)) ⟩
       exec (compile' e2 σ (ADD ∷ c)) (pushN (⟦ e1 ⟧ σ) s )
-    ≡⟨ compile'-correctnes e2 σ (pushN (⟦ e1 ⟧ σ) s ) (ADD ∷ c) ⟩
+    ≡⟨ compile'-correctness e2 σ (pushN (⟦ e1 ⟧ σ) s ) (ADD ∷ c) ⟩
       exec (ADD ∷ c) (pushN (⟦ e2 ⟧ σ) (pushN (⟦ e1 ⟧ σ) s ) ) 
     ≡⟨⟩
       exec c (pushN (⟦ e1 ⟧ σ + ⟦ e2 ⟧ σ) s ) 
@@ -264,14 +264,14 @@ compile'-correctnes (e1 PLUS e2) σ s c =
       exec c (pushN (⟦ (e1 PLUS e2) ⟧ σ) s ) 
   ∎
 
-compile'-correctnes (e1 TIMES e2) σ s c =
+compile'-correctness (e1 TIMES e2) σ s c =
   begin
       exec (compile' (e1 TIMES e2) σ c) s 
     ≡⟨⟩
       exec (compile' e1 σ (compile' e2 σ (MULT ∷ c))) s
-    ≡⟨ compile'-correctnes e1 σ s (compile' e2 σ (MULT ∷ c)) ⟩
+    ≡⟨ compile'-correctness e1 σ s (compile' e2 σ (MULT ∷ c)) ⟩
       exec (compile' e2 σ (MULT ∷ c)) (pushN (⟦ e1 ⟧ σ) s )
-    ≡⟨ compile'-correctnes e2 σ (pushN (⟦ e1 ⟧ σ) s ) (MULT ∷ c) ⟩
+    ≡⟨ compile'-correctness e2 σ (pushN (⟦ e1 ⟧ σ) s ) (MULT ∷ c) ⟩
       exec (MULT ∷ c) (pushN (⟦ e2 ⟧ σ) (pushN (⟦ e1 ⟧ σ) s ) ) 
     ≡⟨⟩
       exec c (pushN (⟦ e1 ⟧ σ * ℕ⟦ e2 ⟧ σ) s ) 
@@ -279,14 +279,14 @@ compile'-correctnes (e1 TIMES e2) σ s c =
       exec c (pushN (⟦ (e1 TIMES e2) ⟧ σ) s ) 
   ∎
 
-compile'-correctnes (e1 MINUS e2) σ s c =
+compile'-correctness (e1 MINUS e2) σ s c =
   begin
       exec (compile' (e1 MINUS e2) σ c) s 
     ≡⟨⟩
       exec (compile' e1 σ (compile' e2 σ (SUB ∷ c))) s
-    ≡⟨ compile'-correctnes e1 σ s (compile' e2 σ (SUB ∷ c)) ⟩
+    ≡⟨ compile'-correctness e1 σ s (compile' e2 σ (SUB ∷ c)) ⟩
       exec (compile' e2 σ (SUB ∷ c)) (pushN (⟦ e1 ⟧ σ) s )
-    ≡⟨ compile'-correctnes e2 σ (pushN (⟦ e1 ⟧ σ) s ) (SUB ∷ c) ⟩
+    ≡⟨ compile'-correctness e2 σ (pushN (⟦ e1 ⟧ σ) s ) (SUB ∷ c) ⟩
       exec (SUB ∷ c) (pushN (⟦ e2 ⟧ σ) (pushN (⟦ e1 ⟧ σ) s ) ) 
     ≡⟨⟩
       exec c (pushN (⟦ e1 ⟧ σ ∸ ⟦ e2 ⟧ σ) s ) 
@@ -295,15 +295,15 @@ compile'-correctnes (e1 MINUS e2) σ s c =
   ∎
 
 
-compile-correctnes : ∀ (e : Arith) (σ : Σ) 
+compile-correctness : ∀ (e : Arith) (σ : Σ) 
 
   ---------------------------------------------
   → exec (compile e σ) (empty ℕ) ≡ [ ⟦ e ⟧ σ ] 
     
-compile-correctnes e σ =
+compile-correctness e σ =
   begin
       exec (compile e σ) (empty ℕ)
-    ≡⟨ compile'-correctnes e σ (empty ℕ) [] ⟩ 
+    ≡⟨ compile'-correctness e σ (empty ℕ) [] ⟩ 
       exec [] (pushN (⟦ e ⟧ σ) (empty ℕ))
     ≡⟨⟩
       pushN (⟦ e ⟧ σ) (empty ℕ)
