@@ -399,7 +399,7 @@ emp = C⟦ fact' ⟧ input
 j = emp "fact"
 
 _! : ℕ → ℕ
-0 ! = 1
+zero ! = suc zero
 (suc n) ! = (suc n) * n !
 
 n*1≡n  : ∀ (n : ℕ) → n * 1 ≡ n 
@@ -414,7 +414,7 @@ postulate
    -----------------------------------
         → σ ≡ σ'
   
-  
+
 body-correct : ∀ ( n fact : ℕ ) (σ : Σ) 
   
             → σ "n" ≡ n               → σ "fact" ≡ fact
@@ -428,43 +428,76 @@ body-correct zero fact σ σn≡n σfact≡fact
   ≡⟨ σ-eq "n" "fact" σn≡n σfact≡fact ⟩
     ((σ [ "n" ↦ 0 ]) [ "fact" ↦ fact ])
   ∎
-body-correct (suc n) fact σ σsucn≡sucn σfact≡fact =
+body-correct (suc n) fact σ σsucn≡sucn σfact≡fact  =
   begin
     (C⟦ fact-body ⟧ ^ (suc n)) σ
   ≡⟨⟩
     (C⟦ fact-body ⟧ ^ n) (C⟦ fact-body ⟧ σ)
   ≡⟨⟩
      (C⟦ fact-body ⟧ ^ n) σ'
-  ≡⟨ body-correct n fact σ' (prop1 σ n σsucn≡sucn) (prop2 σ fact σfact≡fact)⟩
-    (σ' [ "n" ↦ 0 ]) [ "fact" ↦ (fact * (n !)) ]
-  ≡⟨ prop3 σ fact n σfact≡fact ⟩  
+  ≡⟨ body-correct n (fact * suc n) σ' prop1 prop2 ⟩
+   (σ' [ "n" ↦ 0 ]) [ "fact" ↦ ((fact * suc n) * (n !)) ]
+  ≡⟨ prop3 σ' σ ⟩  
     (σ [ "n" ↦ 0 ]) [ "fact" ↦ fact * (suc n !) ]
   ∎
-
+                                                              
   where
     σ' = (σ [ "fact" ↦ σ "fact" * σ "n" ]) 
         [ "n" ↦ (σ [ "fact" ↦ σ "fact" * σ "n" ]) "n" ∸ 1 ]
-       
+    
+    σ'' = (σ [ "fact" ↦ σ "fact" * σ "n" ]) 
+        [ "n" ↦ σ "n" ∸ 1 ]
+
+    
+    fact≢n : "fact" ≢ "n"
+    fact≢n = λ () 
+    
+    prop0 : σ' ≡ (σ [ "fact" ↦ σ "fact" * σ "n" ]) 
+        [ "n" ↦ σ "n" ∸ 1 ]
+    prop0 
+      rewrite axiom2 σ "fact" "n" (σ "fact" * σ "n") fact≢n = refl
+    
+    prop1 :  σ' "n" ≡ n
+    prop1  
+      rewrite prop0 
+        | σsucn≡sucn  = refl
+        
+    prop2 :  σ' "fact" ≡ fact * suc n 
+    prop2 
+      rewrite prop0 
+            | σfact≡fact 
+            | σsucn≡sucn = refl
+    
     postulate
-      -- this must be proved! using the axiom1,2
-      prop1 : ∀ (σ : Σ) (n : ℕ) 
+      arith : fact * suc n * (n !) ≡ fact * ((n !) + n * (n !))
+      -- this is simple arithmetic. 
 
-        → σ "n" ≡ suc n
-        --------------------------
-        → σ' "n" ≡ n
-  
-      prop2 : ∀ (σ : Σ) (fact : ℕ) 
+    eqn : ∀ (σ1 σ2 : Σ) → ((σ1  [ "n" ↦ 0 ]) [ "fact" ↦ fact * suc n * (n !) ]) "n" ≡ 
+      ((σ2  [ "n" ↦ 0 ]) [ "fact" ↦ fact * ((n !) + n * (n !)) ]) "n"
+    eqn σ1 σ2
+      rewrite axiom2 σ1 "fact" "n" (fact * suc n * (n !)) fact≢n 
+        |     axiom2 σ2 "fact" "n" (fact * suc n * (n !)) fact≢n = refl
 
-          → σ "fact" ≡ fact
-        ---------------------------
-        → σ' "fact" ≡ fact
+    eqfact : ∀ (σ1 σ2 : Σ) → ((σ1  [ "n" ↦ 0 ]) [ "fact" ↦ fact * suc n * (n !) ]) "fact" ≡ 
+      ((σ2  [ "n" ↦ 0 ]) [ "fact" ↦ fact * ((n !) + n * (n !)) ]) "fact"
+    eqfact σ1 σ2
+      rewrite axiom2 σ1 "fact" "n" (fact * suc n * (n !)) fact≢n 
+        |     axiom2 σ2 "fact" "n" (fact * suc n * (n !)) fact≢n 
+        |      arith = refl
+
+    prop3 : ∀ (σ1 σ2 : Σ) → ((σ1 [ "n" ↦ 0 ]) [ "fact" ↦ fact * suc n * (n !) ]) ≡ 
+        ((σ2 [ "n" ↦ 0 ]) [ "fact" ↦ fact * ((n !) + n * (n !)) ])
+    prop3 σ1 σ2 
+      rewrite σ-eq 
+        {((σ1 [ "n" ↦ 0 ]) [ "fact" ↦ fact * suc n * (n !) ])} 
+        {((σ2 [ "n" ↦ 0 ]) [ "fact" ↦ fact * ((n !) + n * (n !)) ])} 
+        "n" "fact" (eqn  σ1 σ2) (eqfact σ1 σ2) = refl
       
-      prop3 : ∀ (σ : Σ) (fact n : ℕ)
+      
+      
+       
+  
+    
 
-        → σ "fact" ≡ fact
-        ------------------------------------------------
-        → ((σ' [ "n" ↦ 0 ]) [ "fact" ↦ fact * (n !) ]) ≡
-        ((σ [ "n" ↦ 0 ]) [ "fact" ↦ fact * (suc n !) ])
 
-   
-   
+    
