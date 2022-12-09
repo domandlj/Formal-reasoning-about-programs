@@ -13,7 +13,7 @@ import Relation.Binary.PropositionalEquality as Eq
 open Eq using (_≡_; refl;sym ; cong; cong-app)
 open Eq.≡-Reasoning
 open import Data.Product using (_×_;_,_)
-open import Data.Nat using (ℕ; _+_; _*_;_∸_) 
+open import Data.Nat using (ℕ;zero;suc; _≡ᵇ_;_+_; _*_;_∸_) 
 open import Data.Bool using (Bool; not; _∧_)
 open import Data.String using (String; _≟_)
 open import Relation.Nullary using (yes; no)
@@ -33,6 +33,10 @@ record Semantical (Exp Input Domain : Set) : Set₁ where
 
 open Semantical {{...}} public
 
+data BinOp : Set where
+  _PLUS_ : BinOp
+  _TIMES_ : BinOp
+  _MINUS_ : BinOp
 
 data Arith : Set where
   CONST : ℕ → Arith
@@ -52,11 +56,34 @@ VAR y [ e / x ] with y ≟ x
 (n MINUS m) [ e / x ] =  (n [ e / x ]) MINUS (m [ e / x ])
 
 
+data ⊥ : Set where
+
+_≢_ : {A : Set} → A → A → Set
+a ≢ b = a ≡ b → ⊥
+
 
 _[_↦_] : Σ → Var → ℕ → Σ
 (σ [ X ↦ n ]) Y with Y ≟ X
 ... | yes _ = n
 ... | no  _ = σ Y
+
+postulate
+  axiom1 : ∀ (σ : Σ) (x : Var) (v : ℕ) 
+  
+    -------------------------------
+    → (σ [ x ↦ v ]) x ≡ v 
+  
+  axiom2 : ∀ (σ : Σ) (x y : Var) (v : ℕ) 
+
+        →  x ≢ y
+    -------------------------------
+    → (σ [ x ↦ v ]) y ≡ σ y
+
+proof1 :  "x" ≢ "y"
+proof1 = λ ()
+proof2 :  "x" ≡ "x"
+proof2 = refl
+
 
 
 ℕ⟦_⟧_ : Arith → Σ → ℕ
@@ -310,3 +337,134 @@ compile-correctness e σ =
     ≡⟨⟩
       [ ⟦ e ⟧ σ ]
   ∎
+
+
+{-
+compile-correctness as a commutative diagram
+          
+        compile
+Arith  --------→ Stack ℕ
+     \           |
+      \          |
+ [⟦_⟧]  \         | exec 
+        \        |
+         \       |
+          \      ↓
+            → Stack ℕ
+-}
+
+data Cmd : Set where 
+  SKIP   : Cmd
+  _::=_ : Var → Arith → Cmd
+  _::_ : Cmd → Cmd → Cmd
+  REPEAT_DO_DONE : Arith → Cmd → Cmd
+
+id : {A : Set} → A → A
+id x = x 
+
+_^_ : {A : Set } → (A → A) → ℕ → (A → A)
+f ^ zero = id 
+f ^ (suc n) = λ x → (f ^ n) (f x)
+
+_∘_ : {A B C : Set } → (B → C) → (A → B) → (A → C)
+g ∘ f = λ x → g (f x)
+
+C⟦_⟧ : Cmd → Σ → Σ
+C⟦ SKIP ⟧ σ = σ
+C⟦ x ::= e ⟧ σ = σ [ x ↦ ⟦ e ⟧ σ ]
+C⟦ c :: c' ⟧ σ = C⟦ c' ⟧ (C⟦ c ⟧ σ )
+C⟦ REPEAT e DO c DONE ⟧ σ = (C⟦ c ⟧ ^ n) σ
+  where
+    n = ⟦ e ⟧ σ
+
+infixr 5 _::_
+
+
+fact-body : Cmd
+fact-body = 
+  "fact" ::= ((VAR "fact") TIMES (VAR "n")) ::
+  "n" ::= ((VAR "n") MINUS (CONST 1))
+
+fact' : Cmd
+fact' = 
+  "fact" ::= (CONST 1) ::
+  REPEAT (VAR "n") DO
+    fact-body
+  DONE
+
+input : Σ
+input "n" = 5
+input _ = 0
+emp = C⟦ fact' ⟧ input 
+j = emp "fact"
+
+_! : ℕ → ℕ
+0 ! = 1
+(suc n) ! = (suc n) * n !
+
+n*1≡n  : ∀ (n : ℕ) → n * 1 ≡ n 
+n*1≡n zero = refl
+n*1≡n (suc n) 
+  rewrite n*1≡n n = refl
+
+postulate
+  σ-eq : ∀ {σ σ' : Σ} (x y : Var) 
+   
+   → σ x ≡ σ' x           → σ y ≡ σ' y
+   -----------------------------------
+        → σ ≡ σ'
+  
+  
+body-correct : ∀ ( n fact : ℕ ) (σ : Σ) 
+  
+            → σ "n" ≡ n               → σ "fact" ≡ fact
+  ------------------------------------------------------------------------
+  →   (C⟦ fact-body ⟧ ^ n) σ ≡ (σ [ "n" ↦ 0 ]) [ "fact" ↦ (fact * (n !)) ]
+
+body-correct zero fact σ σn≡n σfact≡fact
+  rewrite (n*1≡n fact) =
+  begin
+    (C⟦ fact-body ⟧ ^ zero) σ
+  ≡⟨ σ-eq "n" "fact" σn≡n σfact≡fact ⟩
+    ((σ [ "n" ↦ 0 ]) [ "fact" ↦ fact ])
+  ∎
+body-correct (suc n) fact σ σsucn≡sucn σfact≡fact =
+  begin
+    (C⟦ fact-body ⟧ ^ (suc n)) σ
+  ≡⟨⟩
+    (C⟦ fact-body ⟧ ^ n) (C⟦ fact-body ⟧ σ)
+  ≡⟨⟩
+     (C⟦ fact-body ⟧ ^ n) σ'
+  ≡⟨ body-correct n fact σ' (prop1 σ n σsucn≡sucn) (prop2 σ fact σfact≡fact)⟩
+    (σ' [ "n" ↦ 0 ]) [ "fact" ↦ (fact * (n !)) ]
+  ≡⟨ prop3 σ fact n σfact≡fact ⟩  
+    (σ [ "n" ↦ 0 ]) [ "fact" ↦ fact * (suc n !) ]
+  ∎
+
+  where
+    σ' = (σ [ "fact" ↦ σ "fact" * σ "n" ]) 
+        [ "n" ↦ (σ [ "fact" ↦ σ "fact" * σ "n" ]) "n" ∸ 1 ]
+       
+    postulate
+      -- this must be proved! using the axiom1,2
+      prop1 : ∀ (σ : Σ) (n : ℕ) 
+
+        → σ "n" ≡ suc n
+        --------------------------
+        → σ' "n" ≡ n
+  
+      prop2 : ∀ (σ : Σ) (fact : ℕ) 
+
+          → σ "fact" ≡ fact
+        ---------------------------
+        → σ' "fact" ≡ fact
+      
+      prop3 : ∀ (σ : Σ) (fact n : ℕ)
+
+        → σ "fact" ≡ fact
+        ------------------------------------------------
+        → ((σ' [ "n" ↦ 0 ]) [ "fact" ↦ fact * (n !) ]) ≡
+        ((σ [ "n" ↦ 0 ]) [ "fact" ↦ fact * (suc n !) ])
+
+   
+   
