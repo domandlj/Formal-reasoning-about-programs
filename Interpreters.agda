@@ -385,8 +385,8 @@ fact-body =
   "fact" ::= ((VAR "fact") TIMES (VAR "n")) ::
   "n" ::= ((VAR "n") MINUS (CONST 1))
 
-fact' : Cmd
-fact' = 
+fact : Cmd
+fact = 
   "fact" ::= (CONST 1) ::
   REPEAT (VAR "n") DO
     fact-body
@@ -395,7 +395,7 @@ fact' =
 input : Σ
 input "n" = 5
 input _ = 0
-emp = C⟦ fact' ⟧ input 
+emp = C⟦ fact ⟧ input 
 j = emp "fact"
 
 _! : ℕ → ℕ
@@ -406,6 +406,11 @@ n*1≡n  : ∀ (n : ℕ) → n * 1 ≡ n
 n*1≡n zero = refl
 n*1≡n (suc n) 
   rewrite n*1≡n n = refl
+
+1*n≡n  : ∀ (n : ℕ) → 1 * n ≡ n 
+1*n≡n zero = refl
+1*n≡n (suc n) 
+  rewrite 1*n≡n n = refl
 
 postulate
   σ-eq : ∀ {σ σ' : Σ} (x y : Var) 
@@ -463,7 +468,7 @@ body-correct (suc n) fact σ σsucn≡sucn σfact≡fact  =
       rewrite prop0 
             | σfact≡fact 
             | σsucn≡sucn = refl
-    
+  
     arith-lhs = fact * suc n * (n !)
     arith-rhs = fact * ((n !) + n * (n !))
     postulate
@@ -496,11 +501,63 @@ body-correct (suc n) fact σ σsucn≡sucn σfact≡fact  =
         "n" "fact" (eqn  σ1 σ2) (eqfact σ1 σ2) = refl
 
       
-      
-      
        
+factorial-correct : ∀ ( n : ℕ ) (σ : Σ) 
   
+      → σ "n" ≡ n  
+  --------------------------------
+  → (C⟦ fact ⟧ σ) "fact" ≡ n ! 
+
+factorial-correct n σ σn≡n =
+  begin
+    (C⟦ fact ⟧ σ) "fact"
+  ≡⟨⟩
+    (C⟦ "fact" ::= (CONST 1) ::
+        REPEAT (VAR "n") DO
+          fact-body
+        DONE ⟧ σ) "fact" 
+  ≡⟨⟩ 
+    ((C⟦ REPEAT (VAR "n") DO fact-body DONE ⟧) 
+      (C⟦ "fact" ::= (CONST 1) ⟧ σ )) "fact"
+  ≡⟨⟩
+    ((C⟦ REPEAT (VAR "n") DO fact-body DONE ⟧) 
+      (σ [ "fact" ↦ ⟦ (CONST 1) ⟧ σ ] )) "fact"
+  ≡⟨⟩
+    ((C⟦ REPEAT (VAR "n") DO fact-body DONE ⟧) (σ [ "fact" ↦ 1 ] )) "fact"
+   ≡⟨⟩
+    (((C⟦ fact-body ⟧ ^ (⟦ VAR "n" ⟧ σ'))) σ') "fact"
+   ≡⟨⟩ 
+    (((C⟦ fact-body ⟧ ^ (σ' "n"))) σ') "fact"
+  ≡⟨ prop2 ⟩ 
+    (((C⟦ fact-body ⟧ ^ n)) σ') "fact"
+  ≡⟨ prop3 ⟩ 
+    n !
+  ∎
+    where
+      σ' = σ [ "fact" ↦ 1 ]
+
+      prop0 : (σ' "fact") ≡ 1
+      prop0 
+        rewrite axiom1 σ' "fact" 1 = refl
+
+      prop1 : (σ' "n") ≡ n
+      prop1 
+        rewrite σn≡n = refl
+
+      prop2 : (((C⟦ fact-body ⟧ ^ (⟦ VAR "n" ⟧ σ'))) σ') "fact" 
+            ≡ (((C⟦ fact-body ⟧ ^ n)) σ') "fact" 
+      prop2 
+       rewrite prop1 = refl
+
+      prop3 : ((C⟦ fact-body ⟧ ^ n) σ') "fact" ≡ n !
+      prop3 
+        rewrite body-correct n 1 σ' prop1 prop0 
+              | 1*n≡n (n !)  = refl
+      
+     
+      
     
 
 
     
+ 
