@@ -29,7 +29,7 @@ Var = String
 
 record Semantical (Exp Input Domain : Set) : Set₁ where
   field
-    ⟦_⟧_ : Exp → Input → Domain
+    ⟦_⟧ : Exp → Input → Domain
 
 open Semantical {{...}} public
 
@@ -86,7 +86,7 @@ proof2 = refl
 
 
 
-ℕ⟦_⟧_ : Arith → Σ → ℕ
+ℕ⟦_⟧ : Arith → Σ → ℕ
 ℕ⟦ CONST n ⟧ σ = n
 ℕ⟦ VAR x ⟧ σ = σ x
 ℕ⟦ n PLUS m ⟧ σ = ℕ⟦ n ⟧ σ + ℕ⟦ m ⟧ σ
@@ -95,7 +95,7 @@ proof2 = refl
 
 instance
   NatSemantical : Semantical Arith Σ ℕ
-  NatSemantical = record { ⟦_⟧_ = ℕ⟦_⟧_ }
+  NatSemantical = record { ⟦_⟧ = ℕ⟦_⟧ }
 
 {-
 
@@ -256,69 +256,69 @@ compile'-correctness : ∀ (e : Arith) (σ : Σ) (s : Stack ℕ) (c : Program)
 
 compile'-correctness (CONST n) σ s c = 
   begin
-      exec (compile' (CONST n) σ c) s 
-    ≡⟨⟩
-      exec (PUSH n ∷ c) s 
-    ≡⟨⟩
-      exec c (pushN n s) 
-    ≡⟨⟩
-      exec c (pushN (⟦ (CONST n) ⟧ σ) s) 
+    exec (compile' (CONST n) σ c) s 
+  ≡⟨⟩
+    exec (PUSH n ∷ c) s 
+  ≡⟨⟩
+    exec c (pushN n s) 
+  ≡⟨⟩
+    exec c (pushN (⟦ (CONST n) ⟧ σ) s) 
   ∎
 
 compile'-correctness (VAR x) σ s c = 
   begin
-      exec (compile' (VAR x) σ c) s 
-    ≡⟨⟩
-      exec (PUSH ( σ x ) ∷ c) s 
-    ≡⟨⟩
+    exec (compile' (VAR x) σ c) s 
+  ≡⟨⟩
+    exec (PUSH ( σ x ) ∷ c) s 
+  ≡⟨⟩
     exec c (pushN (σ x) s) 
-    ≡⟨⟩
-      exec c (pushN (⟦ (CONST (σ x)) ⟧ σ) s ) 
+  ≡⟨⟩
+    exec c (pushN (⟦ (CONST (σ x)) ⟧ σ) s ) 
   ∎
 
 compile'-correctness (e1 PLUS e2) σ s c =
   begin
-      exec (compile' (e1 PLUS e2) σ c) s 
-    ≡⟨⟩
-      exec (compile' e1 σ (compile' e2 σ (ADD ∷ c))) s
-    ≡⟨ compile'-correctness e1 σ s (compile' e2 σ (ADD ∷ c)) ⟩
-      exec (compile' e2 σ (ADD ∷ c)) (pushN (⟦ e1 ⟧ σ) s )
-    ≡⟨ compile'-correctness e2 σ (pushN (⟦ e1 ⟧ σ) s ) (ADD ∷ c) ⟩
-      exec (ADD ∷ c) (pushN (⟦ e2 ⟧ σ) (pushN (⟦ e1 ⟧ σ) s ) ) 
-    ≡⟨⟩
-      exec c (pushN (⟦ e1 ⟧ σ + ⟦ e2 ⟧ σ) s ) 
-    ≡⟨⟩
-      exec c (pushN (⟦ (e1 PLUS e2) ⟧ σ) s ) 
+    exec (compile' (e1 PLUS e2) σ c) s 
+  ≡⟨⟩
+    exec (compile' e1 σ (compile' e2 σ (ADD ∷ c))) s
+  ≡⟨ compile'-correctness e1 σ s (compile' e2 σ (ADD ∷ c)) ⟩
+    exec (compile' e2 σ (ADD ∷ c)) (pushN (⟦ e1 ⟧ σ) s )
+  ≡⟨ compile'-correctness e2 σ (pushN (⟦ e1 ⟧ σ) s ) (ADD ∷ c) ⟩
+    exec (ADD ∷ c) (pushN (⟦ e2 ⟧ σ) (pushN (⟦ e1 ⟧ σ) s ) ) 
+  ≡⟨⟩
+    exec c (pushN (⟦ e1 ⟧ σ + ⟦ e2 ⟧ σ) s ) 
+  ≡⟨⟩
+    exec c (pushN (⟦ (e1 PLUS e2) ⟧ σ) s ) 
   ∎
 
 compile'-correctness (e1 TIMES e2) σ s c =
   begin
-      exec (compile' (e1 TIMES e2) σ c) s 
-    ≡⟨⟩
-      exec (compile' e1 σ (compile' e2 σ (MULT ∷ c))) s
-    ≡⟨ compile'-correctness e1 σ s (compile' e2 σ (MULT ∷ c)) ⟩
-      exec (compile' e2 σ (MULT ∷ c)) (pushN (⟦ e1 ⟧ σ) s )
-    ≡⟨ compile'-correctness e2 σ (pushN (⟦ e1 ⟧ σ) s ) (MULT ∷ c) ⟩
-      exec (MULT ∷ c) (pushN (⟦ e2 ⟧ σ) (pushN (⟦ e1 ⟧ σ) s ) ) 
-    ≡⟨⟩
-      exec c (pushN (⟦ e1 ⟧ σ * ℕ⟦ e2 ⟧ σ) s ) 
-    ≡⟨⟩
-      exec c (pushN (⟦ (e1 TIMES e2) ⟧ σ) s ) 
+    exec (compile' (e1 TIMES e2) σ c) s 
+  ≡⟨⟩
+    exec (compile' e1 σ (compile' e2 σ (MULT ∷ c))) s
+  ≡⟨ compile'-correctness e1 σ s (compile' e2 σ (MULT ∷ c)) ⟩
+    exec (compile' e2 σ (MULT ∷ c)) (pushN (⟦ e1 ⟧ σ) s )
+  ≡⟨ compile'-correctness e2 σ (pushN (⟦ e1 ⟧ σ) s ) (MULT ∷ c) ⟩
+    exec (MULT ∷ c) (pushN (⟦ e2 ⟧ σ) (pushN (⟦ e1 ⟧ σ) s ) ) 
+  ≡⟨⟩
+    exec c (pushN (⟦ e1 ⟧ σ * ℕ⟦ e2 ⟧ σ) s ) 
+  ≡⟨⟩
+    exec c (pushN (⟦ (e1 TIMES e2) ⟧ σ) s ) 
   ∎
 
 compile'-correctness (e1 MINUS e2) σ s c =
   begin
-      exec (compile' (e1 MINUS e2) σ c) s 
-    ≡⟨⟩
-      exec (compile' e1 σ (compile' e2 σ (SUB ∷ c))) s
-    ≡⟨ compile'-correctness e1 σ s (compile' e2 σ (SUB ∷ c)) ⟩
-      exec (compile' e2 σ (SUB ∷ c)) (pushN (⟦ e1 ⟧ σ) s )
-    ≡⟨ compile'-correctness e2 σ (pushN (⟦ e1 ⟧ σ) s ) (SUB ∷ c) ⟩
-      exec (SUB ∷ c) (pushN (⟦ e2 ⟧ σ) (pushN (⟦ e1 ⟧ σ) s ) ) 
-    ≡⟨⟩
-      exec c (pushN (⟦ e1 ⟧ σ ∸ ⟦ e2 ⟧ σ) s ) 
-    ≡⟨⟩
-      exec c (pushN (⟦ (e1 MINUS e2) ⟧ σ) s ) 
+    exec (compile' (e1 MINUS e2) σ c) s 
+  ≡⟨⟩
+    exec (compile' e1 σ (compile' e2 σ (SUB ∷ c))) s
+  ≡⟨ compile'-correctness e1 σ s (compile' e2 σ (SUB ∷ c)) ⟩
+    exec (compile' e2 σ (SUB ∷ c)) (pushN (⟦ e1 ⟧ σ) s )
+  ≡⟨ compile'-correctness e2 σ (pushN (⟦ e1 ⟧ σ) s ) (SUB ∷ c) ⟩
+    exec (SUB ∷ c) (pushN (⟦ e2 ⟧ σ) (pushN (⟦ e1 ⟧ σ) s ) ) 
+  ≡⟨⟩
+    exec c (pushN (⟦ e1 ⟧ σ ∸ ⟦ e2 ⟧ σ) s ) 
+  ≡⟨⟩
+    exec c (pushN (⟦ (e1 MINUS e2) ⟧ σ) s ) 
   ∎
 
 
@@ -329,12 +329,12 @@ compile-correctness : ∀ (e : Arith) (σ : Σ)
     
 compile-correctness e σ =
   begin
-      exec (compile e σ) (empty ℕ)
-    ≡⟨ compile'-correctness e σ (empty ℕ) [] ⟩ 
-      exec [] (pushN (⟦ e ⟧ σ) (empty ℕ))
-    ≡⟨⟩
-      pushN (⟦ e ⟧ σ) (empty ℕ)
-    ≡⟨⟩
+    exec (compile e σ) (empty ℕ)
+  ≡⟨ compile'-correctness e σ (empty ℕ) [] ⟩ 
+    exec [] (pushN (⟦ e ⟧ σ) (empty ℕ))
+  ≡⟨⟩
+    pushN (⟦ e ⟧ σ) (empty ℕ)
+  ≡⟨⟩
       [ ⟦ e ⟧ σ ]
   ∎
 
@@ -379,6 +379,9 @@ C⟦ REPEAT e DO c DONE ⟧ σ = (C⟦ c ⟧ ^ n) σ
 
 infixr 5 _::_
 
+instance
+  CmdSemantical : Semantical Cmd Σ Σ
+  CmdSemantical = record { ⟦_⟧ = C⟦_⟧ }
 
 fact-body : Cmd
 fact-body = 
@@ -424,22 +427,22 @@ body-correct : ∀ ( n fact : ℕ ) (σ : Σ)
   
             → σ "n" ≡ n               → σ "fact" ≡ fact
   ------------------------------------------------------------------------
-  →   (C⟦ fact-body ⟧ ^ n) σ ≡ (σ [ "n" ↦ 0 ]) [ "fact" ↦ (fact * (n !)) ]
+  →   (⟦ fact-body ⟧ ^ n) σ ≡ (σ [ "n" ↦ 0 ]) [ "fact" ↦ (fact * (n !)) ]
 
 body-correct zero fact σ σn≡n σfact≡fact
   rewrite (n*1≡n fact) =
   begin
-    (C⟦ fact-body ⟧ ^ zero) σ
+    (⟦ fact-body ⟧ ^ zero) σ
   ≡⟨ σ-eq "n" "fact" σn≡n σfact≡fact ⟩
     ((σ [ "n" ↦ 0 ]) [ "fact" ↦ fact ])
   ∎
 body-correct (suc n) fact σ σsucn≡sucn σfact≡fact  =
   begin
-    (C⟦ fact-body ⟧ ^ (suc n)) σ
+    (⟦ fact-body ⟧ ^ (suc n)) σ
   ≡⟨⟩
-    (C⟦ fact-body ⟧ ^ n) (C⟦ fact-body ⟧ σ)
+    (⟦ fact-body ⟧ ^ n) (⟦ fact-body ⟧ σ)
   ≡⟨⟩
-     (C⟦ fact-body ⟧ ^ n) σ'
+     (⟦ fact-body ⟧ ^ n) σ'
   ≡⟨ body-correct n (fact * suc n) σ' prop1 prop2 ⟩
    (σ' [ "n" ↦ 0 ]) [ "fact" ↦ ((fact * suc n) * (n !)) ]
   ≡⟨ prop3 σ' σ ⟩  
@@ -490,10 +493,10 @@ body-correct (suc n) fact σ σsucn≡sucn σfact≡fact  =
       rewrite axiom2 σ1 "fact" "n" arith-lhs fact≢n 
             | axiom2 σ2 "fact" "n" arith-lhs fact≢n 
             | arith = refl
-
     prop3 : ∀ (σ1 σ2 : Σ) → 
         ((σ1 [ "n" ↦ 0 ]) [ "fact" ↦ arith-lhs ])  
       ≡ ((σ2 [ "n" ↦ 0 ]) [ "fact" ↦ arith-rhs ])
+    
     prop3 σ1 σ2 
       rewrite σ-eq 
         {((σ1 [ "n" ↦ 0 ]) [ "fact" ↦ arith-lhs ])} 
@@ -506,30 +509,30 @@ factorial-correct : ∀ ( n : ℕ ) (σ : Σ)
   
       → σ "n" ≡ n  
   --------------------------------
-  → (C⟦ fact ⟧ σ) "fact" ≡ n ! 
+  → (⟦ fact ⟧ σ) "fact" ≡ n ! 
 
 factorial-correct n σ σn≡n =
   begin
-    (C⟦ fact ⟧ σ) "fact"
+    (⟦ fact ⟧ σ) "fact"
   ≡⟨⟩
-    (C⟦ "fact" ::= (CONST 1) ::
+    (⟦ "fact" ::= (CONST 1) ::
         REPEAT (VAR "n") DO
           fact-body
         DONE ⟧ σ) "fact" 
   ≡⟨⟩ 
-    ((C⟦ REPEAT (VAR "n") DO fact-body DONE ⟧) 
-      (C⟦ "fact" ::= (CONST 1) ⟧ σ )) "fact"
+    ((⟦ REPEAT (VAR "n") DO fact-body DONE ⟧) 
+      (⟦ "fact" ::= (CONST 1) ⟧ σ )) "fact"
   ≡⟨⟩
-    ((C⟦ REPEAT (VAR "n") DO fact-body DONE ⟧) 
+    ((⟦ REPEAT (VAR "n") DO fact-body DONE ⟧) 
       (σ [ "fact" ↦ ⟦ (CONST 1) ⟧ σ ] )) "fact"
   ≡⟨⟩
-    ((C⟦ REPEAT (VAR "n") DO fact-body DONE ⟧) (σ [ "fact" ↦ 1 ] )) "fact"
-   ≡⟨⟩
-    (((C⟦ fact-body ⟧ ^ (⟦ VAR "n" ⟧ σ'))) σ') "fact"
-   ≡⟨⟩ 
-    (((C⟦ fact-body ⟧ ^ (σ' "n"))) σ') "fact"
+    ((⟦ REPEAT (VAR "n") DO fact-body DONE ⟧) (σ [ "fact" ↦ 1 ] )) "fact"
+  ≡⟨⟩
+    ((⟦ fact-body ⟧ ^ (⟦ VAR "n" ⟧ σ')) σ') "fact"
+  ≡⟨⟩ 
+    ((⟦ fact-body ⟧ ^ (σ' "n")) σ') "fact"
   ≡⟨ prop2 ⟩ 
-    (((C⟦ fact-body ⟧ ^ n)) σ') "fact"
+    ((⟦ fact-body ⟧ ^ n) σ') "fact"
   ≡⟨ prop3 ⟩ 
     n !
   ∎
@@ -544,20 +547,16 @@ factorial-correct n σ σn≡n =
       prop1 
         rewrite σn≡n = refl
 
-      prop2 : (((C⟦ fact-body ⟧ ^ (⟦ VAR "n" ⟧ σ'))) σ') "fact" 
-            ≡ (((C⟦ fact-body ⟧ ^ n)) σ') "fact" 
+      prop2 : ((⟦ fact-body ⟧ ^ (⟦ VAR "n" ⟧ σ')) σ') "fact" 
+            ≡ ((⟦ fact-body ⟧ ^ n) σ') "fact" 
       prop2 
        rewrite prop1 = refl
 
-      prop3 : ((C⟦ fact-body ⟧ ^ n) σ') "fact" ≡ n !
+      prop3 : ((⟦ fact-body ⟧ ^ n) σ') "fact" ≡ n !
       prop3 
         rewrite body-correct n 1 σ' prop1 prop0 
               | 1*n≡n (n !)  = refl
       
      
-      
-    
-
-
-    
+  
  
