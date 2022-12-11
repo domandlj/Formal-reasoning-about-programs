@@ -6,4 +6,4 @@ Work in progress, i'm trying to mechanize the book "Formal Reasoning About Progr
 For now just using Z3 via schmitty for a decidable theory of naturals. 
 
 # Requirements
-$schmitty$
+`schmitty`
