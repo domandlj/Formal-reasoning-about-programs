@@ -1,0 +1,3 @@
+name: Formal-reasoning-about-programs
+include: . /agdarsec /schmitty
+depend: standard-library agdarsec schmitty 
