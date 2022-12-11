@@ -4,6 +4,8 @@
   2022
   Semantics of Arith exps, stack machine compiling 
 -}
+{-# OPTIONS --allow-exec #-}
+{-# OPTIONS --guardedness #-}
 
 module Interpreters where
 open import ADT.Stack.Stack
@@ -19,6 +21,11 @@ open import Data.String using (String; _≟_)
 open import Relation.Nullary using (yes; no)
 --open import Relation.Binary.PropositionalEquality using (_≡_; refl; sym)
 open import Function.Base using (case_of_; case_return_of_)
+
+open import SMT.Theories.Nats as Nats
+open import SMT.Backend.Z3 Nats.theory using (solveZ3)
+
+
 
 
 Var = String
@@ -421,7 +428,11 @@ postulate
    → σ x ≡ σ' x           → σ y ≡ σ' y
    -----------------------------------
         → σ ≡ σ'
-  
+
+-- HELP FROM Z3
+auxbyZ3 : ∀ ( x y z : ℕ) →  x * (suc y) * z ≡ x * (z + y * z)
+auxbyZ3 = solveZ3
+
 
 body-correct : ∀ ( n fact : ℕ ) (σ : Σ) 
   
@@ -471,12 +482,14 @@ body-correct (suc n) fact σ σsucn≡sucn σfact≡fact  =
       rewrite prop0 
             | σfact≡fact 
             | σsucn≡sucn = refl
-  
+
+ 
     arith-lhs = fact * suc n * (n !)
     arith-rhs = fact * ((n !) + n * (n !))
-    postulate
-      arith : arith-lhs ≡ arith-rhs
-      -- must be proved, is simple arithmetic. 
+      
+    arith : arith-lhs ≡ arith-rhs
+    arith rewrite 
+      auxbyZ3 fact n (n !) = refl
 
    
     eqn : ∀ (σ1 σ2 : Σ) → 
@@ -559,4 +572,3 @@ factorial-correct n σ σn≡n =
       
      
   
- 
