@@ -4,7 +4,7 @@ import Relation.Binary.PropositionalEquality as Eq
 open import Data.Nat using (ℕ; zero; suc; _+_)
 
 
-open Eq using (_≡_; refl; cong; sym)
+open Eq using (_≡_; refl; cong; sym; trans)
 open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; step-≡; _∎)
 
 open import Data.Nat.Properties using (+-comm)
@@ -36,12 +36,23 @@ data ^ : ∀ {A : Set} (R : A → A → Set) → A → A → Set where
                → ^ R x z           
 
 
+
+
+  
+
 data ≺ : ℕ → ℕ → Set where
-  ≺-cons : {x y : ℕ} 
+  ≺-cons : ∀ {x y : ℕ} 
 
     →  x + 1 ≡ y
     -------------
     →  ≺ x y
+
+≺-inv : ∀ (x y : ℕ) 
+  → ≺ x y 
+  → x + 1 ≡ y
+
+≺-inv x y (≺-cons x+1≡y) = x+1≡y
+
 
 data ≤ : ℕ → ℕ → Set where
 
