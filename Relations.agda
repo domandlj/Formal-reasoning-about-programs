@@ -1,13 +1,18 @@
+{-# OPTIONS --allow-exec #-}
+{-# OPTIONS --guardedness #-}
 module Relations where
 
 import Relation.Binary.PropositionalEquality as Eq
-open import Data.Nat using (ℕ; zero; suc; _+_)
+open import Data.Nat using (ℕ; zero; suc; _+_;_∸_)
 
 
-open Eq using (_≡_; refl; cong; sym; trans)
+open Eq using (_≡_; refl; cong; cong₂; sym ; trans)
 open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; step-≡; _∎)
 
 open import Data.Nat.Properties using (+-comm)
+
+open import SMT.Theories.Nats as Nats
+open import SMT.Backend.Z3 Nats.theory using (solveZ3)
 
 -- relations 
 -- reflex:         ∀ x     . xRx
@@ -130,5 +135,40 @@ data < : ℕ → ℕ → Set where
 
     h2 : < z y
     h2 = ≺'⊆< z y r2
+
+x≺'1+k+x : ∀ (x k : ℕ) 
+
+  ----------------------
+    → ≺' x (1 + k + x)
+
+x≺'1+k+x x zero = ^-base (≺-cons refl)
+x≺'1+k+x x (suc k) = ^-trans (x≺'1+k+x x k) (^-base (≺-cons refl))
+
+-- Z3 help!
+arith-1 : ∀ {x y : ℕ} → (1 +  (y ∸ x ∸ 1) + x) ≡ y 
+arith-1 = solveZ3
+
+<⊆≺' : ∀ (x y : ℕ) 
+  
+      → < x y
+  -------------------
+      → ≺' x y
+<⊆≺' x y _ = part2
+  where
+
+    part1 : (≺' x (1 +  (y ∸ x ∸ 1) + x) ) ≡ (≺' x y) 
+    part1 =
+      begin
+        ≺' x (1 +  (y ∸ x ∸ 1) + x)
+      ≡⟨ cong₂ ≺' refl (arith-1 {x} {y}) ⟩
+        ≺' x y
+      ∎
     
- 
+    part2 : ≺' x y
+    part2 
+      rewrite (sym part1) = x≺'1+k+x x (y ∸ x ∸ 1)
+
+  
+
+
+
