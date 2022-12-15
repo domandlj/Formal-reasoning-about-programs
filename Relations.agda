@@ -36,20 +36,16 @@ data ^ : ∀ {A : Set} (R : A → A → Set) → A → A → Set where
                → ^ R x z           
 
 
-
-
-  
-
 data ≺ : ℕ → ℕ → Set where
   ≺-cons : ∀ {x y : ℕ} 
 
-    →  x + 1 ≡ y
+    →  suc x ≡ y
     -------------
     →  ≺ x y
 
 ≺-inv : ∀ (x y : ℕ) 
   → ≺ x y 
-  → x + 1 ≡ y
+  → suc x ≡ y
 
 ≺-inv x y (≺-cons x+1≡y) = x+1≡y
 
@@ -67,20 +63,44 @@ data ≤ : ℕ → ℕ → Set where
     --------------------
     → ≤ (suc x) (suc y)
 
+x≤x : ∀ (x : ℕ) → ≤ x x
+x≤x zero = z≤n
+x≤x (suc x) = s≤s (x≤x x)
 
 
 
 < : ℕ → ℕ → Set
 < x y = ≤ (suc x)  y
 
+
+
 ≺' : ℕ → ℕ → Set
 ≺' x y = ^ ≺ x y
 
-prop1 : ∀ (x y : ℕ) 
+
+≺⊆< : ∀ (x y : ℕ) 
+  
+      → ≺ x y
+  -------------------
+      → < x y
+≺⊆< x y (≺-cons r)
+  rewrite (sym r) = x≤x (suc x)
+
+≺'⊆< : ∀ (x y : ℕ) 
   
       → ≺' x y
   -------------------
       → < x y
 
-prop1 zero y ≺'zy = {!  !}
-prop1 (suc x) y ≺'sy = {!   !}
+≺'⊆< x y (^-base r) = ≺⊆< x y r
+≺'⊆< x y (^-trans {x = x}  {y = z} {z = y} r1 r2) = <-trans' x z y h1 h2
+  where
+    h1 : < x z
+    h1 = ≺'⊆< x z r1
+
+    h2 : < z y
+    h2 = ≺'⊆< z y r2
+    postulate
+      <-trans' : ∀ (a b c : ℕ) → < a b → < b c → < a c
+
+ 
