@@ -68,14 +68,42 @@ x≤x zero = z≤n
 x≤x (suc x) = s≤s (x≤x x)
 
 
+data < : ℕ → ℕ → Set where
 
-< : ℕ → ℕ → Set
-< x y = ≤ (suc x)  y
+  z<s : ∀ {n : ℕ}
+      ------------
+    → < zero (suc n)
 
+  s<s : ∀ {m n : ℕ}
+    → < m n
+      -------------
+    → < (suc m) (suc n)
+
+
+
+
+
+<-trans : ∀ {x y z : ℕ}
+  
+  → < x y       → < y z 
+  ---------------------
+        → < x z
+<-trans z<s (s<s n<m) = z<s
+<-trans (s<s m<n) (s<s n<p) = s<s (<-trans m<n n<p)
+
+
+
+<xsx : ∀ {x : ℕ}
+
+  ---------------------
+    → < x (suc x)
+<xsx {zero} = z<s
+<xsx {suc x} = s<s <xsx
 
 
 ≺' : ℕ → ℕ → Set
 ≺' x y = ^ ≺ x y
+
 
 
 ≺⊆< : ∀ (x y : ℕ) 
@@ -84,7 +112,8 @@ x≤x (suc x) = s≤s (x≤x x)
   -------------------
       → < x y
 ≺⊆< x y (≺-cons r)
-  rewrite (sym r) = x≤x (suc x)
+  rewrite (sym r) = <xsx
+
 
 ≺'⊆< : ∀ (x y : ℕ) 
   
@@ -92,15 +121,14 @@ x≤x (suc x) = s≤s (x≤x x)
   -------------------
       → < x y
 
+
 ≺'⊆< x y (^-base r) = ≺⊆< x y r
-≺'⊆< x y (^-trans {x = x}  {y = z} {z = y} r1 r2) = <-trans' x z y h1 h2
+≺'⊆< x y (^-trans {x = x}  {y = z} {z = y} r1 r2) = <-trans h1 h2
   where
     h1 : < x z
     h1 = ≺'⊆< x z r1
 
     h2 : < z y
     h2 = ≺'⊆< z y r2
-    postulate
-      <-trans' : ∀ (a b c : ℕ) → < a b → < b c → < a c
-
+    
  
