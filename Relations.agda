@@ -6,6 +6,10 @@ import Relation.Binary.PropositionalEquality as Eq
 open import Data.Nat using (ℕ; zero; suc; _+_;_∸_)
 open import Data.Product using (_×_;_,_)
 open import Data.List
+open import Data.Maybe
+open import Data.List.Relation.Unary.Any
+open import Data.Bool
+
 
 open Eq using (_≡_; refl; cong; cong₂; sym ; trans)
 open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; step-≡; _∎)
@@ -214,6 +218,10 @@ data π {A : Set} : List A → List A → Set where
 
 -- example
 
+data Fin : ℕ → Set where
+  zero : {n : ℕ} → Fin (suc n)
+  suc : {n : ℕ} → Fin n → Fin (suc n)
+
 li1 : List ℕ
 li1 = 2 ∷ 3 ∷ 10 ∷ 0 ∷ []
 
@@ -222,3 +230,48 @@ li2 = 10 ∷ 2 ∷ 3 ∷ 0 ∷ []
 
 perm : π li1 li2
 perm = π-trans (π-add π-add2) π-add2
+
+
+-- relation min x xs when x is the min of xs
+data min  : ℕ → List ℕ → Set where
+  [] : ∀ {x} →
+
+   ----------
+    min x []
+    
+  _∷_ : ∀ {x y} {ys} 
+    
+    → ≤ x y           → min x ys 
+    -------------------------------
+       → min x (y ∷ ys)
+
+-- Proof that a list in ascending order
+data InOrder : List ℕ → Set where
+  []  : InOrder []
+  _∷_ : ∀ {x xs} 
+    
+    → min x xs                → InOrder xs 
+    --------------------------------------
+      → InOrder (x ∷ xs)
+
+record Sorted (xs : List ℕ) : Set where
+  field
+    ys       : List ℕ
+    inOrder  : InOrder ys
+    isPerm   : π ys xs
+
+
+
+-- Skeleton for proving that a sorting function is correct
+postulate
+  dumb-sort : List ℕ → List ℕ
+  dumb-order : ∀ {xs : List ℕ} → InOrder (dumb-sort xs)
+  dumb-perm :  ∀ {xs : List ℕ} → π (dumb-sort xs) xs
+
+correct-dumb-sort : ∀ (xs : List ℕ) → Sorted xs 
+correct-dumb-sort xs = record 
+  {
+      ys = dumb-sort xs
+    ; inOrder = dumb-order
+    ; isPerm = dumb-perm
+  }
