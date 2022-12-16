@@ -5,7 +5,7 @@ module Relations where
 import Relation.Binary.PropositionalEquality as Eq
 open import Data.Nat using (ℕ; zero; suc; _+_;_∸_)
 open import Data.Product using (_×_;_,_)
-
+open import Data.List
 
 open Eq using (_≡_; refl; cong; cong₂; sym ; trans)
 open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; step-≡; _∎)
@@ -185,3 +185,40 @@ postulate
   relation-≡ 
     {r1 = ≺'} {r2 = <} 
     ( ≺'⊆< x y , <⊆≺' x y )
+
+
+-- 𝜋
+-- permutations of list
+data π {A : Set} : List A → List A → Set where
+  π-empty : 
+    
+    ------------
+      π [] [] 
+  
+  π-add : ∀ {xs ys : List A} {x : A} 
+    
+    → π xs ys
+   ------------------------
+    → π (x ∷ xs) ( x ∷ ys)
+  
+  π-add2 : ∀ {xs : List A} {x y : A}
+
+    ---------------------------------
+     → π (x ∷ y ∷ xs) ( y ∷ x ∷ xs)
+  
+  π-trans : ∀ {xs ys zs : List A}
+  
+    → π xs ys                     → π ys zs
+    ---------------------------------------
+          → π xs zs
+
+-- example
+
+li1 : List ℕ
+li1 = 2 ∷ 3 ∷ 10 ∷ 0 ∷ []
+
+li2 : List ℕ
+li2 = 10 ∷ 2 ∷ 3 ∷ 0 ∷ []
+
+perm : π li1 li2
+perm = π-trans (π-add π-add2) π-add2
