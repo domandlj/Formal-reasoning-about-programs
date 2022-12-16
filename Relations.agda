@@ -4,6 +4,7 @@ module Relations where
 
 import Relation.Binary.PropositionalEquality as Eq
 open import Data.Nat using (ℕ; zero; suc; _+_;_∸_)
+open import Data.Product using (_×_;_,_)
 
 
 open Eq using (_≡_; refl; cong; cong₂; sym ; trans)
@@ -168,7 +169,19 @@ arith-1 = solveZ3
     part2 
       rewrite (sym part1) = x≺'1+k+x x (y ∸ x ∸ 1)
 
+postulate 
+  -- this axioms makes sense, (p ⇒ q) ∧ (q ⇒ p)  is p ≡ q 
+  relation-≡ : ∀ {A B : Set} {r1 r2 : A → B → Set} {x : A} {y : B}
   
+    → (r1 x y → r2 x y) × (r2 x y → r1 x y)
+    -----------------------------------------------
+    → r1 x y ≡ r2 x y
 
+≺'≡< : ∀ (x y : ℕ)
 
-
+    --------------------
+    → (≺' x y ≡ < x y)
+≺'≡< x y = 
+  relation-≡ 
+    {r1 = ≺'} {r2 = <} 
+    ( ≺'⊆< x y , <⊆≺' x y )
