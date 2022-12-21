@@ -9,6 +9,8 @@ Work in progress, i'm trying to mechanize the book "Formal Reasoning About Progr
 | `ADT`               | **3**       | Abstract data types as existential types, verification of a Queue, auxilar Stack                                                                                                                                                                                                                                                                         |
 | `Interpreters.agda` | **4**       | Denotational semantics of int expressions and a compiler to a stack machine,     Correctness of compiler exec with respect to denotational semantics.   Denotational semantics of an primitive recursive imperative language,   Correctness of imperative factorial and wrt specification. Using type classes to overload the denotational function.     |
 | `Relations.agda`    | **5**       | Relations as types. Relations: transitive closure and permutation.                                                                                                                                                                                                                                                                                       |
+| `TransSys.agda`    | **6**       | Programs as state machines.                                                                                                                                                                                                                                                                                       |
+
 
 # Automation
 For now just using Z3 via schmitty for a decidable theory of naturals. 
