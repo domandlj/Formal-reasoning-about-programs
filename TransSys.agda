@@ -109,6 +109,7 @@ factorialSys n₀ = record
 
 
 
+-- For a ts ⟨S, S₀, →⟩ Reachable = {s ∈ S | s₀ ∈ S₀  ∧ s₀ →✷ s }
 data Reachable : ∀ {State : Set} → (sys : TransSys State) → (s : State) → Set₁ where
 
   reachable : ∀ {State} {sys : TransSys State} {s₀ s : State}
@@ -117,4 +118,46 @@ data Reachable : ∀ {State : Set} → (sys : TransSys State) → (s : State) �
       --------------------------------------------------------------------------
         →  Reachable sys s
 
+-- For a ts ⟨S, S₀, →⟩, I ⊆ S is an invariant if Reachable ⊆ I
+-- In a ts a state s satisfies a propertie P, P s if s ∈ P
+-- ∀ s : Reachable s ⇒ I s
+
+
+
+record InvariantFor {State : Set} (sys : TransSys State) (invariant : State → Set) : Set₁  where
+  field
+    invariantFor : ∀ {State : Set} (sys : TransSys State) (invariant : State → Set) 
   
+      → ∀ (s : State) → (TransSys.initial sys) s        
+      → ∀ (s' : State) → ✷ (TransSys.step sys) s s'
+      ----------------------------------------------
+          → invariant s
+
+
+useInvariant' : ∀ {State : Set} (sys : TransSys State) (invariant : State → Set) (s s' : State)
+
+    → InvariantFor sys invariant       
+    → (TransSys.initial sys) s        
+    → ✷ (TransSys.step sys) s s'
+    ------------------------------
+          → invariant s' 
+
+useInvariant' = λ sys invariant s s' z z₁ →
+  InvariantFor.invariantFor z sys (λ _ → invariant s') s z₁ s'
+
+
+useInvariant : ∀ {State : Set} (sys : TransSys State) (invariant : State → Set) (s : State)
+
+    → InvariantFor sys invariant       
+    → Reachable sys s        
+    ------------------------------
+      → invariant s 
+
+useInvariant sys invariant s inv (reachable {s₀ = s₀} {s = s} init step) = 
+  useInvariant' sys invariant s₀ s inv init step
+
+
+fact-inv : ℕ → FactState → Set
+fact-inv n (return x) = n ! ≡ x
+fact-inv n (acc x a) = n ! ≡ x ! * a
+
