@@ -133,7 +133,6 @@ record InvariantFor {State : Set} (sys : TransSys State) (invariant : State → 
       ----------------------------------------------
           → invariant s
 
-
 useInvariant' : ∀ {State : Set} (sys : TransSys State) (invariant : State → Set) (s s' : State)
 
     → InvariantFor sys invariant       
@@ -157,7 +156,77 @@ useInvariant sys invariant s inv (reachable {s₀ = s₀} {s = s} init step) =
   useInvariant' sys invariant s₀ s inv init step
 
 
-fact-inv : ℕ → FactState → Set
-fact-inv n (return x) = n ! ≡ x
-fact-inv n (acc x a) = n ! ≡ x ! * a
 
+ 
+postulate
+  invariantInduction :  ∀ {State : Set} (sys : TransSys State) (invariant : State → Set)
+
+    → ( ∀ (s : State) →  (TransSys.initial sys) s →  invariant s)
+    → (∀ (s : State) → invariant s → ∀ (s' : State) →  (TransSys.step sys) s s' → invariant s')
+    --------------------------------------------------------------------------------------------------
+           → InvariantFor sys invariant
+  -- this can be proved.
+  
+
+
+
+
+-- arithmetic
+n*1≡n :  ∀ (n : ℕ) → n * 1 ≡ n
+n*1≡n zero = refl
+n*1≡n (suc n) = begin
+    suc (n * 1)
+  ≡⟨ cong suc (n*1≡n n) ⟩
+    suc n 
+  ∎
+
+postulate
+  m≡n+0⇒m≡n : ∀ {m n : ℕ} 
+    → m ≡ (n + zero)
+    → m ≡ n
+  
+  identity1 : ∀ (m a : ℕ) →  (m !) * (a * (m + 1)) ≡ ((m + 1) !) * a
+
+
+invariantFactorial : ℕ → FactState → Set
+invariantFactorial n (return x) = n ! ≡ x
+invariantFactorial n (acc x a) = n ! ≡ x ! * a
+
+
+invariantFactorialCorrect : ∀ (n : ℕ) →   
+  
+  ---------------------------------------------------------
+    InvariantFor (factorialSys n) (invariantFactorial n)
+    
+invariantFactorialCorrect n = invariantInduction (factorialSys n) (invariantFactorial n) baseCase inductiveCase
+  where
+    baseCase : (s : FactState) → FactInit n s → invariantFactorial n s
+    baseCase (acc x .1) factInit
+      rewrite  n*1≡n (x !)  = refl
+    
+    
+    inv-trans : ∀ (n : ℕ) ( s s' : FactState)
+        
+        → invariantFactorial n s
+        → ⊳ s s'
+        ---------------------------
+         →  invariantFactorial n s'
+ 
+    inv-trans n .(acc 0 _) .(return _) invFact factDone 
+      rewrite m≡n+0⇒m≡n invFact = refl
+    inv-trans n .(acc (m + 1) a) .(acc m (a * (m + 1))) invFact (factStep m a)
+      rewrite identity1 m a
+        | invFact = refl
+    
+    inductiveCase : ∀  (s : FactState) 
+            → invariantFactorial n s 
+            → ∀ (s' : FactState) 
+            → TransSys.step (factorialSys n) s s'
+            --------------------------------------
+            → invariantFactorial n s'
+
+    inductiveCase s invFact s' step  = inv-trans n s s' invFact step
+    
+
+
+     
