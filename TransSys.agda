@@ -24,6 +24,8 @@ _! : ℕ → ℕ
 zero ! = suc zero
 (suc n) ! = (suc n) * n !
 
+
+
 data FactState : Set where
   return : ℕ → FactState
   acc : ℕ → ℕ → FactState
@@ -180,11 +182,28 @@ n*1≡n (suc n) = begin
     suc n 
   ∎
 
-postulate
-  m≡n+0⇒m≡n : ∀ {m n : ℕ} 
+n+0≡n : ∀ (n : ℕ) → n + 0 ≡ n
+n+0≡n zero = refl
+n+0≡n (suc n) = begin
+    suc (n + 0)
+  ≡⟨ cong suc (n+0≡n n) ⟩
+    suc n
+  ∎
+
+m≡n+0⇒m≡n : ∀ {m n : ℕ} 
     → m ≡ (n + zero)
     → m ≡ n
-  
+m≡n+0⇒m≡n {m} {n} m≡n+0 = 
+  begin
+    m
+  ≡⟨ m≡n+0 ⟩
+    n + 0
+  ≡⟨ n+0≡n n ⟩
+    n
+  ∎
+
+
+postulate
   identity1 : ∀ (m a : ℕ) →  (m !) * (a * (m + 1)) ≡ ((m + 1) !) * a
 
 
@@ -203,7 +222,6 @@ invariantFactorialCorrect n = invariantInduction (factorialSys n) (invariantFact
     baseCase : (s : FactState) → FactInit n s → invariantFactorial n s
     baseCase (acc x .1) factInit
       rewrite  n*1≡n (x !)  = refl
-    
     
     inv-trans : ∀ (n : ℕ) ( s s' : FactState)
         
@@ -224,7 +242,7 @@ invariantFactorialCorrect n = invariantInduction (factorialSys n) (invariantFact
             → TransSys.step (factorialSys n) s s'
             --------------------------------------
             → invariantFactorial n s'
-
+            
     inductiveCase s invFact s' step  = inv-trans n s s' invFact step
     
 
