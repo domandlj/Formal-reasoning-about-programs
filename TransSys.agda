@@ -219,7 +219,7 @@ invariantFactorialCorrect : ∀ (n : ℕ) →
     
 invariantFactorialCorrect n = invariantInduction (factorialSys n) (invariantFactorial n) baseCase inductiveCase
   where
-    baseCase : (s : FactState) → FactInit n s → invariantFactorial n s
+    baseCase : ∀ (s : FactState) → FactInit n s → invariantFactorial n s
     baseCase (acc x .1) factInit
       rewrite  n*1≡n (x !)  = refl
     
@@ -244,7 +244,31 @@ invariantFactorialCorrect n = invariantInduction (factorialSys n) (invariantFact
             → invariantFactorial n s'
             
     inductiveCase s invFact s' step  = inv-trans n s s' invFact step
-    
 
+invariantFactorialAlways :  ∀ (n : ℕ) (s : FactState) 
 
-     
+    →  Reachable (factorialSys n) s
+    ----------------------------------------------
+    →  invariantFactorial n s 
+
+invariantFactorialAlways n s reach = 
+  useInvariant (factorialSys n) (invariantFactorial n) s (invariantFactorialCorrect n) reach
+
+factOk' : ∀ (n : ℕ) (s : FactState) →
+
+  FactFinal s
+  → invariantFactorial n s
+  ------------------------
+  → s ≡ return ( n !)
+  
+factOk' n .(return a) (factFinal a) inv
+   rewrite sym inv = refl
+
+factOk : ∀ (n : ℕ) (s : FactState) 
+
+  → Reachable (factorialSys n) s
+  → FactFinal s
+  → s ≡ return ( n !)
+factOk n s reach final = factOk' n s final always
+  where
+    always = invariantFactorialAlways n s reach
