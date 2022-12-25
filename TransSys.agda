@@ -24,6 +24,17 @@ _! : ℕ → ℕ
 zero ! = suc zero
 (suc n) ! = (suc n) * n !
 
+{-
+factorial(n) {
+  a = 1;
+  while (n > 0) {
+    a = a * n;
+    n = n - 1;
+  }
+  
+  return a; 
+}
+-}
 
 
 data FactState : Set where
@@ -217,7 +228,8 @@ invariantFactorialCorrect : ∀ (n : ℕ) →
   ---------------------------------------------------------
     InvariantFor (factorialSys n) (invariantFactorial n)
     
-invariantFactorialCorrect n = invariantInduction (factorialSys n) (invariantFactorial n) baseCase inductiveCase
+invariantFactorialCorrect n = 
+  invariantInduction (factorialSys n) (invariantFactorial n) baseCase inductiveCase
   where
     baseCase : ∀ (s : FactState) → FactInit n s → invariantFactorial n s
     baseCase (acc x .1) factInit
@@ -237,6 +249,7 @@ invariantFactorialCorrect n = invariantInduction (factorialSys n) (invariantFact
         | invFact = refl
     
     inductiveCase : ∀  (s : FactState) 
+
             → invariantFactorial n s 
             → ∀ (s' : FactState) 
             → TransSys.step (factorialSys n) s s'
@@ -268,7 +281,109 @@ factOk : ∀ (n : ℕ) (s : FactState)
 
   → Reachable (factorialSys n) s
   → FactFinal s
+  -------------------------------
   → s ≡ return ( n !)
 factOk n s reach final = factOk' n s final always
   where
     always = invariantFactorialAlways n s reach
+
+
+
+{-
+      PART 2. CONCURRENT PROGRAM 
+-}
+
+{-
+  lock();
+  local := global;
+  global := local + 1;
+  unlock();
+-}
+
+data IncrementProgram : Set where
+  lock : IncrementProgram
+  read : IncrementProgram
+  write : ℕ → IncrementProgram
+  unlock : IncrementProgram
+  done : IncrementProgram
+
+
+-- shared state
+record IncState : Set where
+  field
+    locked : Bool
+    global : ℕ
+
+record ThreadedState (Shared Priv : Set) : Set  where
+  field
+    shared : Shared
+    priv : Priv
+
+
+IncrementState : Set
+IncrementState = ThreadedState IncState IncrementProgram
+
+data IncrementInit : IncrementState → Set where
+  incInit : IncrementInit (
+    record {   
+      shared = record { 
+          locked = false 
+        ; global = 0 
+        }
+      ; priv = lock
+      }
+    )
+
+data IncrementStep : IncrementState → IncrementState → Set where
+  incLock : ∀ (g : ℕ) → 
+    IncrementStep 
+      (record
+      {   shared = record { locked = false ; global = g } 
+        ; priv = lock 
+      }) 
+      
+      (record
+      {   shared = record { locked = true ; global = g } 
+        ; priv = read 
+      })
+
+  incRead : ∀ (l : Bool) (g : ℕ) → 
+    IncrementStep 
+      (record
+      {   shared = record { locked = l ; global = g } 
+        ; priv = read }) 
+      
+      (record
+      {   shared = record { locked = l ; global = g } 
+        ; priv = write g 
+      })
+
+  incWrite : ∀ (l : Bool) (g n : ℕ) → 
+    IncrementStep 
+      (record
+      {   shared = record { locked = l ; global = g } 
+        ; priv = write n }) 
+      
+      (record
+      {   shared = record { locked = l ; global = (suc n) } 
+        ; priv = unlock 
+      })
+
+  incUnlock : ∀ (l : Bool) (g : ℕ) → 
+    IncrementStep 
+      (record
+      {   shared = record { locked = l ; global = g } 
+        ; priv = unlock }) 
+      
+      (record
+      {   shared = record { locked = l ; global = g } 
+        ; priv = done 
+      })
+
+
+IncrementSys : TransSys IncrementState
+IncrementSys = record 
+  {
+      initial = IncrementInit
+    ; step = IncrementStep
+  }
