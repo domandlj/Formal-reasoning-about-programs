@@ -446,12 +446,6 @@ Parallel Sys1 Sys2 = record
 
 Increment2Sys = Parallel IncrementSys IncrementSys
 
-{-
-Inductive increment2_invariant :
-  threaded_state inc_state (increment_program * increment_program) -> Prop :=
-| Inc2Inv : forall sh pr1 pr2,
-  increment2_invariant {| Shared := sh; Private := (pr1, pr2) |}.
--}
 
 -- invariant
 data Increment2Invariant : ThreadedState IncState (IncrementProgram × IncrementProgram) → Set where
