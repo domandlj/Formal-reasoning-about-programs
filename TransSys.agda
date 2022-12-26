@@ -387,3 +387,111 @@ IncrementSys = record
       initial = IncrementInit
     ; step = IncrementStep
   }
+
+-- IncrementSys is a transition sys in a single thread
+
+-- Two threads
+
+
+data ParallelInit {Shared Priv1 Priv2 : Set} 
+    (Init1 : (ThreadedState Shared Priv1) → Set)
+    (Init2 : (ThreadedState Shared Priv2) → Set)  
+      : ThreadedState Shared (Priv1 × Priv2) → Set  where
+  
+  p-init : ∀ (sh : Shared) (pr1 : Priv1) (pr2 : Priv2) 
+
+    → Init1 (record { shared = sh ; priv = pr1 }) 
+    → Init2 (record { shared = sh ; priv = pr2 }) 
+    -----------------------------------------------------------------------
+    → ParallelInit Init1 Init2 (record { shared = sh ; priv = (pr1 , pr2) })
+
+
+data ParallelStep {Shared Priv1 Priv2 : Set}  
+    (Step1 : (ThreadedState Shared Priv1) → (ThreadedState Shared Priv1) → Set)
+    (Step2 : (ThreadedState Shared Priv2) → (ThreadedState Shared Priv2) → Set)  
+    : (ThreadedState Shared (Priv1 × Priv2)) → (ThreadedState Shared (Priv1 × Priv2)) → Set  where
+
+  -- fst thread runs
+  p-step1 : ∀ (sh sh' : Shared) (pr1 pr1' : Priv1) (pr2 : Priv2)
+
+    
+    → Step1 (record { shared = sh ; priv = pr1 }) (record { shared = sh' ; priv = pr1' })
+    -------------------------------------------------------------------------------------
+    → ParallelStep Step1 Step2
+          (record { shared = sh ; priv = (pr1 , pr2) })
+          (record { shared = sh' ; priv = (pr1' , pr2) })
+  
+  -- snd thread runs        
+  p-step2 : ∀ (sh sh' : Shared) (pr1 : Priv1) (pr2 pr2' : Priv2)
+
+    
+    → Step2 (record { shared = sh ; priv = pr2 }) (record { shared = sh' ; priv = pr2' })
+    -------------------------------------------------------------------------------------
+    → ParallelStep Step1 Step2
+          (record { shared = sh ; priv = (pr1 , pr2) })
+          (record { shared = sh' ; priv = (pr1 , pr2') })
+
+
+Parallel : {Shared : Set} → {Priv1 : Set} → {Priv2 : Set} 
+    → TransSys (ThreadedState Shared Priv1) 
+    → TransSys (ThreadedState Shared Priv2)
+    --------------------------------------------------
+    → TransSys (ThreadedState Shared (Priv1 × Priv2))  
+    
+Parallel Sys1 Sys2 = record 
+  {
+    initial = ParallelInit ((TransSys.initial) Sys1) ((TransSys.initial) Sys2)
+    ; step = ParallelStep ((TransSys.step) Sys1) ((TransSys.step) Sys2)
+  }
+
+Increment2Sys = Parallel IncrementSys IncrementSys
+
+{-
+Inductive increment2_invariant :
+  threaded_state inc_state (increment_program * increment_program) -> Prop :=
+| Inc2Inv : forall sh pr1 pr2,
+  increment2_invariant {| Shared := sh; Private := (pr1, pr2) |}.
+-}
+
+-- invariant
+data Increment2Invariant : ThreadedState IncState (IncrementProgram × IncrementProgram) → Set where
+
+  inct2inv :  ∀ {sh : IncState } {pr1 pr2 : IncrementProgram}
+  
+    --------------------------------------------------------------------
+    → Increment2Invariant (record { shared = sh  ; priv = (pr2 , pr2) })
+
+Increment2InvariantOk : InvariantFor Increment2Sys Increment2Invariant
+Increment2InvariantOk = {!   !}
+
+
+
+-- when one invariant implies another ? 
+
+InvariantWeaken : ∀ {State} (sys : TransSys State) (invariant1 invariant2 : State → Set)
+  
+  → InvariantFor sys invariant1
+  →  (∀ (s : State) → invariant1 s → invariant2 s)
+  ------------------------------------------------
+  → InvariantFor sys invariant2 
+
+InvariantWeaken sys invariant1 invariant2 z _ =
+  record
+  { invariantFor =
+      λ sys₁ invariant s → InvariantFor.invariantFor z sys₁ (λ _ → invariant s) s
+  }
+
+
+
+-- Weaker invariant corresponding exactly to the overall correctness property we want to establish for this system
+Increment2RightAnswer : ThreadedState IncState (IncrementProgram × IncrementProgram) → Set 
+Increment2RightAnswer s =  
+  
+    (ThreadedState.priv s) ≡ (done , done) 
+  -------------------------------------------------
+  → (IncState.global (ThreadedState.shared s)) ≡ 2
+
+
+
+Increment2SysCorrect : ∀ {s} → Reachable Increment2Sys s → Increment2RightAnswer s
+Increment2SysCorrect = {!   !}
