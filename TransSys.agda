@@ -453,11 +453,32 @@ data Increment2Invariant : ThreadedState IncState (IncrementProgram × Increment
   inct2inv :  ∀ {sh : IncState } {pr1 pr2 : IncrementProgram}
   
     --------------------------------------------------------------------
-    → Increment2Invariant (record { shared = sh  ; priv = (pr2 , pr2) })
+    → Increment2Invariant (record { shared = sh  ; priv = pr1 , pr2 })
+
+
 
 Increment2InvariantOk : InvariantFor Increment2Sys Increment2Invariant
-Increment2InvariantOk = {!   !}
+Increment2InvariantOk = invariantInduction (record
+      { initial = ParallelInit IncrementInit IncrementInit
+          ; step = ParallelStep IncrementStep IncrementStep
+      }) Increment2Invariant baseCase inductiveCase 
+  where
 
+    baseCase : ∀ (s : ThreadedState IncState (IncrementProgram × IncrementProgram)) 
+            → ParallelInit IncrementInit IncrementInit s 
+            → Increment2Invariant s
+    baseCase .(record { shared = sh ; priv = pr1 , pr2 }) (p-init sh pr1 pr2 x x₁) = inct2inv
+
+    
+    inductiveCase : ∀ (s : ThreadedState IncState (IncrementProgram × IncrementProgram)) 
+      → Increment2Invariant s 
+      → ∀ (s' : ThreadedState IncState (IncrementProgram × IncrementProgram)) 
+      → ParallelStep IncrementStep IncrementStep s s' 
+      →  Increment2Invariant s'
+    inductiveCase .(record { shared = _ ; priv = _ , _ }) 
+      inct2inv .(record { shared = sh' ; priv = pr1' , _ }) (p-step1 _ sh' _ pr1' _ x) = inct2inv
+    inductiveCase .(record { shared = _ ; priv = _ , _ }) 
+      inct2inv .(record { shared = sh' ; priv = _ , pr2' }) (p-step2 _ sh' _ _ pr2' x) = inct2inv
 
 
 -- when one invariant implies another ? 
@@ -477,7 +498,11 @@ InvariantWeaken sys invariant1 invariant2 z _ =
 
 
 
+
+-- Increment2InvariantOk : InvariantFor Increment2Sys Increment2Invariant
+
 -- Weaker invariant corresponding exactly to the overall correctness property we want to establish for this system
+
 Increment2RightAnswer : ThreadedState IncState (IncrementProgram × IncrementProgram) → Set 
 Increment2RightAnswer s =  
   
@@ -485,7 +510,21 @@ Increment2RightAnswer s =
   -------------------------------------------------
   → (IncState.global (ThreadedState.shared s)) ≡ 2
 
+Increment2RightAnswerInv : InvariantFor Increment2Sys Increment2RightAnswer
+Increment2RightAnswerInv = InvariantWeaken (record
+      { initial = ParallelInit IncrementInit IncrementInit
+        ; step = ParallelStep IncrementStep IncrementStep
+      }) Increment2Invariant Increment2RightAnswer Increment2InvariantOk {!   !}
 
 
 Increment2SysCorrect : ∀ {s} → Reachable Increment2Sys s → Increment2RightAnswer s
-Increment2SysCorrect = {!   !}
+Increment2SysCorrect s reach = {!   !}
+  
+
+
+
+
+    
+    
+
+ 
