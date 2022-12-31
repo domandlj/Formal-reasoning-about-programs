@@ -9,7 +9,7 @@ open import Data.List
 open import Data.Maybe
 open import Data.List.Relation.Unary.Any
 open import Data.Bool
-open import TransSystem
+open import TransitionSystem
 
 
 open Eq using (_≡_; refl; cong; cong₂; sym ; trans)
