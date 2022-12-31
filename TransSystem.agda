@@ -1,6 +1,6 @@
 {-# OPTIONS --allow-exec #-}
 {-# OPTIONS --guardedness #-}
-module TransSys where
+module TransSystem where
 
 import Relation.Binary.PropositionalEquality as Eq
 open import Data.Nat using (ℕ; zero; suc; _+_;_∸_; _*_)
@@ -502,7 +502,7 @@ InvariantWeaken sys invariant1 invariant2 z _ =
 -- Increment2InvariantOk : InvariantFor Increment2Sys Increment2Invariant
 
 -- Weaker invariant corresponding exactly to the overall correctness property we want to establish for this system
-
+{-
 Increment2RightAnswer : ThreadedState IncState (IncrementProgram × IncrementProgram) → Set 
 Increment2RightAnswer s =  
   
@@ -514,17 +514,17 @@ Increment2RightAnswerInv : InvariantFor Increment2Sys Increment2RightAnswer
 Increment2RightAnswerInv = InvariantWeaken (record
       { initial = ParallelInit IncrementInit IncrementInit
         ; step = ParallelStep IncrementStep IncrementStep
-      }) Increment2Invariant Increment2RightAnswer Increment2InvariantOk {!   !}
+      }) Increment2Invariant Increment2RightAnswer Increment2InvariantOk ?
 
 
 Increment2SysCorrect : ∀ {s} → Reachable Increment2Sys s → Increment2RightAnswer s
-Increment2SysCorrect s reach = {!   !}
+Increment2SysCorrect s reach =  ?  
+-}
+
+
+
+
+    
+    
+
   
-
-
-
-
-    
-    
-
- 
