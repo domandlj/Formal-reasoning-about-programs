@@ -94,7 +94,20 @@ oneStepClosureDone sys inv r1 r2 = h
       OneStepClosureNew.oneStepClosureNew
       (Data.Product.proj₂ (OneStepClosure.oneStepClosure r2)) s s' z)
 
+
+
+data MultiStepClosure : ∀ {State} (sys : TransSys State) (invariant1 invariant2 : State → Set) → Set₁ where
+  mscDone :  ∀ {State} {sys : TransSys State} {inv} 
     
+      → OneStepClosure sys inv inv 
+      -------------------------------
+      → MultiStepClosure sys inv inv
+  
+  mscStep : ∀ {State} {sys : TransSys State} (inv inv' inv'' : State → Set)
+      → OneStepClosure sys inv inv'
+      → MultiStepClosure sys inv' inv''
+     ---------------------------------
+      → MultiStepClosure sys inv inv''
 
 
 
@@ -102,5 +115,20 @@ oneStepClosureDone sys inv r1 r2 = h
 
 
 
+multiStepClosureOk' : ∀ {State} (sys : TransSys State) (inv inv' : State → Set)
 
- 
+  → (MultiStepClosure sys inv inv')
+  → (∀ (s : State) → (TransSys.initial sys) s → inv' s)
+  → InvariantFor sys inv'
+
+multiStepClosureOk' sys inv .inv (mscDone x) r2 = oneStepClosureDone sys inv r2 (record
+ { oneStepClosure =
+     record { oneStepClosureCurrent = λ s z → z } ,
+     record
+     { oneStepClosureNew =
+         OneStepClosureNew.oneStepClosureNew
+         (Data.Product.proj₂ (OneStepClosure.oneStepClosure x))
+     }
+ }) 
+multiStepClosureOk' sys inv inv' (mscStep .inv inv'' .inv' x r1) r2 = multiStepClosureOk'  sys inv'' inv' r1 r2
+
