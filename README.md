@@ -3,7 +3,7 @@
 Work in progress, i'm trying to mechanize the book "Formal Reasoning About Programs" of Adam Chlipala in Agda instead of Coq. Not following it exactly though, adding some things and ommiting others.  
 
 # Files 
-| **File (Dir)**          | **Chapter** | **Contnent**                                                                                                                                                                                                                                                                                                                                         |
+| **File (Dir)**          | **Chapter** | **Content**                                                                                                                                                                                                                                                                                                                                          |
 | ----------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Syntax.agda`           | **2**       | Abstract syntax of int expressions.                                                                                                                                                                                                                                                                                                                  |
 | `ADT`                   | **3**       | Abstract data types as existential types, verification of a Queue, auxilar Stack                                                                                                                                                                                                                                                                     |
@@ -11,6 +11,12 @@ Work in progress, i'm trying to mechanize the book "Formal Reasoning About Progr
 | `Relations.agda`        | **5**       | Relations as types. Relations: transitive closure and permutation.                                                                                                                                                                                                                                                                                   |
 | `TransitionSystem.agda` | **6**       | Programs as state machines.                                                                                                                                                                                                                                                                                                                          |
 | `ModelCheck.agda`       | **7**       | Automatic way to get ts invariants                                                                                                                                                                                                                                                                                                                   |
+
+# Misc
+| **File (Dir)**               | **Content**                                               |
+| ---------------------------- | --------------------------------------------------------- |
+| `InternalExternalVerif.agda` | Verification of functional programs, internal or external |
+
 
 
 # Automation
