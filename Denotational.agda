@@ -361,6 +361,26 @@ isFixpoint : {A : Set}
   → (f : A → A)
   → (Monotonic _≤_ _≤_ f)
   --------------------------------------------
-  →  (lfp _≤_ _≈_ Π cl f) ≈ (f (lfp _≤_ _≈_ Π cl f))
+  →  (f (lfp _≤_ _≈_ Π cl f)) ≈ (lfp _≤_ _≈_ Π cl f)  
   
-isFixpoint _≤_ _≈_ Π cl f _  = {!  !}
+isFixpoint _≤_ _≈_ Π cl f m  = fx≈x
+  where
+    x = f (lfp _≤_ _≈_ Π cl f)
+        
+    x≤fx = lfpLe _≤_ _≈_ Π cl f x (m
+        (IsCompleteLattice.gtLub cl
+          (λ z →
+            IsPartialOrder.transitive (IsCompleteLattice.isPartialOrder cl)
+            (m (IsCompleteLattice.lub cl z)) z)))
+    
+    fx≤x = Lelfp _≤_ _≈_ Π cl f x λ z →
+      IsPartialOrder.transitive (IsCompleteLattice.isPartialOrder cl)
+      (m (IsCompleteLattice.lub cl z)) z
+    
+    antisim = IsPartialOrder.antisym (IsCompleteLattice.isPartialOrder cl) 
+    
+    -- f x ≤ x ∧ x ≤ f x ⇒ f x ≈ x
+    fx≈x = antisim x≤fx fx≤x 
+
+    
+    
