@@ -4,6 +4,7 @@ open import Data.Nat using (ℕ; zero; suc; _+_;_∸_; _*_)
 open import Data.Product using (_×_;_,_)
 open import Data.List
 open import Data.Maybe
+open import Function.Base using (flip)
 open import Data.List.Relation.Unary.Any
 open import Data.Bool using (true; false; _∧_; Bool; if_then_else_)
 open Eqq using (_≡_; refl; cong; cong₂; sym ; trans)
@@ -12,7 +13,9 @@ open import Data.Product
 open import Data.String using (String; _≟_)
 open import Relation.Nullary using (yes; no)
 open import Data.Sum.Base
+open import Level using (Level; _⊔_) renaming (suc to succ)
 
+{--
 data _≤_ : ℕ → ℕ → Set where
 
   z≤n : ∀ {x : ℕ}
@@ -32,8 +35,19 @@ x≤y⇒x≤sy : ∀ {x y : ℕ}
   ------------
   → x ≤ suc y
 x≤y⇒x≤sy z≤n = z≤n
-x≤y⇒x≤sy (s≤s r) = s≤s (x≤y⇒x≤sy r)  
+x≤y⇒x≤sy (s≤s r) = s≤s (x≤y⇒x≤sy r)
 
+
+
+data _≤ᶠ_ : (ℕ → ℕ) → (ℕ → ℕ) → Set where
+  ≤ᶠ-rule : ∀ {x : ℕ} {f g : (ℕ → ℕ)}
+
+    → f x ≤ g x
+    ----------------
+    → f ≤ᶠ g
+
+infix 4 _≤ᶠ_
+--}
 
 record Eq {a} (A : Set a) : Set a where
   field
@@ -61,8 +75,8 @@ instance
 
 -- {n : ℕ | 4 ≤ n}, here ℕ is the set and less than four the predicate.
 
-m : Σ ℕ (λ n → 4 ≤ n)
-m = 5 , s≤s (s≤s (s≤s (s≤s z≤n)))
+--m : Σ ℕ (λ n → 4 ≤ n)
+--m = 5 , s≤s (s≤s (s≤s (s≤s z≤n)))
 
 Var = String
 Σ' = Var → ℕ
@@ -109,8 +123,10 @@ _[_↦_] : Σ' → Var → ℕ → Σ'
 ℕ⟦ n MINUS m ⟧ σ = ℕ⟦ n ⟧ σ ∸ ℕ⟦ m ⟧ σ
 
 
-data Id {A : Set} : A → A → Set where
-  id : {x : A} → Id x x
+
+-- Id = {(x, y) | x , y ∈ A ∧ x ≡ y }
+Id : {A : Set} → A → A → Set
+Id x y = x ≡ y
 
 
 -- R ∪ S = {(x, y) | (x, y) ∈ R v (x, y) ∈ S}
@@ -121,8 +137,8 @@ _∪_ : {A : Set} {B : Set}
   → (A → B → Set)
 (R ∪ S) x y = R x y ⊎ S x y
 
--- R ◯ S = {(x, y) | ∃z: (x,z) ∈ R ∧ (z,y) ∈ S}
 
+-- R ◯ S = {(x, y) | ∃z: (x,z) ∈ R ∧ (z,y) ∈ S}
 _◯_ : {A : Set} {B : Set} {C : Set} 
   → (A → B → Set) 
   → (B → C → Set) 
@@ -147,3 +163,204 @@ denote (x ::= e) σ σ' = Σ Σ' (λ σ'' → σ'' ≡ σ  × σ' ≡ (σ [ x �
   -- denote (x ::= e) = {(σ, σ') : σ' ≡ (σ [ x ↦ ℕ⟦ e ⟧ σ ]) }
 denote (cmd :: cmd') = (denote cmd) ◯ (denote cmd')
 denote WHILE x DO cmd DONE = {!   !}
+
+-- fixpoint
+-- x = f x
+
+
+
+
+
+
+Monotonic : {A B : Set} 
+
+  → (A → A → Set)
+  → (B → B → Set) 
+  → (A → B)
+  ---------------
+  → Set
+Monotonic _≤_ _≤'_ f  =  ∀ {x y} 
+
+  →  x ≤ y 
+  ---------------
+  →  f x ≤' f y
+
+_∈_ : {A : Set} 
+  → A
+  → (A → Set)
+  -----------
+  → Set
+
+_∈'_ : {A : Set} 
+  → (A → Set)
+  → ((A → Set) → Set)
+  -----------
+  → Set
+
+Y ∈' X = X Y
+
+
+
+x ∈ X = X x
+ 
+_⊆_ : {A : Set}
+    → (A → Set)
+    → (A → Set)
+    ------------
+    → Set
+
+X ⊆ Y = ∀ {x} 
+  →  x ∈ X 
+  ---------
+  →  x ∈ Y
+
+-- ∩ X = { x | Y ∈ X  ⇒ x ∈ Y }
+
+∩ : {A : Set}
+    → ((A → Set) → Set)
+    -------------------
+    → Set₁ 
+
+∩ {A} X = ∀ {Y : A → Set} {x : A} 
+
+  → Y ∈' X
+  --------
+  → x ∈ Y
+
+
+-- relations 
+-- reflex:         ∀ x     . xRx
+-- simmetric:      ∀ x y   . xRy ⇒ yRx
+-- antisimmetric:  ∀ x y   . xRy ∧ yRx ⇒  x ≡ y
+-- transistive:    ∀ x y z . xRy ∧ yRz ⇒  xRz 
+-- total:          ∀ x y   . xRy v yRx 
+-- 
+-- A relation R is
+-- Preorder: reflexive and transitive.
+-- Partial order: preorder and antisimmetric.
+-- Total order: partial order and total
+
+Reflex : {A : Set} 
+  
+  → (A → A →  Set) 
+  ---------------
+  → Set
+
+Reflex _R_ = ∀ {x} → x R x
+
+
+
+Sym : {A : Set} 
+  
+  → (A → A →  Set) 
+  ---------------
+  → Set
+
+Sym _R_ =  ∀ {x y} 
+
+  → x R y
+  --------
+  → y R x
+
+
+Antisym : {A : Set} 
+  
+  → (A → A →  Set)
+  → (A → A →  Set) 
+  ---------------
+  → Set
+
+Antisym _R_ _≈_ =  ∀ {x y} 
+
+  → x R y
+  → y R x
+  --------
+  → y ≈ x
+
+
+Trans : {A : Set} 
+  
+  → (A → A →  Set) 
+  ---------------
+  → Set
+
+Trans _R_ = ∀ {x y z}
+
+  → x R y
+  → y R z
+  --------
+  → x R z
+
+  
+
+record IsPartialOrder {A : Set} (_≤_ _≈_ : A → A → Set) : Set where
+  field
+    reflex      : Reflex  _≤_
+    transitive  : Trans _≤_ 
+    antisym     : Antisym _≤_ _≈_
+
+
+record IsCompleteLattice {A : Set} 
+  (_≤_ _≈_ : A → A → Set) 
+  (Π : (A → Set) → A) : Set₁ where
+  field
+    isPartialOrder : IsPartialOrder _≤_ _≈_
+    lub : ∀ {X} {x} → x ∈ X → Π X ≤ x
+    gtLub : ∀ {X} {y} → (∀ {x} → x ∈ X → y ≤ x) → y ≤ Π X
+
+
+
+lfp : {A : Set} 
+  → (_≤_ _≈_ : A → A → Set)
+  → (Π : (A → Set) → A) 
+  → (IsCompleteLattice _≤_ _≈_ Π)
+  → (A → A) 
+  → A
+lfp _≤_ _ Π _ f = Π (λ x → f x ≤ x)
+
+
+{-
+lemma lfp_le {α : Type} [complete_lattice α] (f : α → α)
+    (a : α) (h : f a ≤ a) :
+  lfp f ≤ a :=
+complete_lattice.Inf_le _ _ h
+
+-}
+
+lfpLe : {A : Set} 
+  → (_≤_ _≈_ : A → A → Set)
+  → (Π : (A → Set) → A) 
+  → (cl : IsCompleteLattice _≤_ _≈_ Π)
+  → (f : A → A) 
+  → (x : A)
+  → (h : f x ≤ x)
+  ---------------
+  → lfp _≤_ _≈_ Π cl f ≤ x
+lfpLe _≤_ _≈_ Π cl f x h = IsCompleteLattice.lub cl h
+
+
+Lelfp : {A : Set} 
+
+  → (_≤_ _≈_ : A → A → Set)
+  → (Π : (A → Set) → A) 
+  → (cl : IsCompleteLattice _≤_ _≈_ Π)
+  → (f : A → A) 
+  → (x : A)
+  → (h : ∀ {x'} →  f x' ≤ x' → x ≤ x')
+  -------------------------------------
+  → x ≤ lfp _≤_ _≈_ Π cl f
+
+Lelfp _≤_ _≈_ Π cl f x h = IsCompleteLattice.gtLub cl h
+
+-- lfp is a fixpoint
+isFixpoint : {A : Set} 
+
+  → (_≤_ _≈_ : A → A → Set) 
+  → (Π : (A → Set) → A) 
+  → (cl : IsCompleteLattice _≤_ _≈_ Π)
+  → (f : A → A)
+  → (Monotonic _≤_ _≤_ f)
+  --------------------------------------------
+  →  (lfp _≤_ _≈_ Π cl f) ≈ (f (lfp _≤_ _≈_ Π cl f))
+  
+isFixpoint _≤_ _≈_ Π cl f _  = {!  !}
