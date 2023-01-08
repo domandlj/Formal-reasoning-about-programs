@@ -119,7 +119,11 @@ X ⊆ Y = ∀ {x}
   →  x ∈ X 
   ---------
   →  x ∈ Y
-  
+
+
+
+
+
 -- relations 
 -- reflex:         ∀ x     . xRx
 -- simmetric:      ∀ x y   . xRy ⇒ yRx
@@ -184,6 +188,7 @@ module Structures
   {a ℓ ℓ₃} {A : Set a} -- The underlying set
   (_≈_ : Rel A ℓ)   -- The underlying equality relation
   where
+
 
   record IsPartialOrder (_≤_ : Rel A ℓ₂  ) :  Set (a ⊔ ℓ ⊔ ℓ₂) where
     field
@@ -256,5 +261,98 @@ module Structures
       antisim = IsPartialOrder.antisym (IsCompleteLattice.isPartialOrder cl) 
       
       -- f x ≤ x ∧ x ≤ f x ⇒ f x ≈ x
-      fx≈x :  f (lfp _≤_ Π cl f) ≈  (lfp _≤_ Π cl f)
+      fx≈x : f (lfp _≤_ Π cl f) ≈ (lfp _≤_ Π cl f)
       fx≈x = antisim fx≤x x≤fx
+
+
+
+
+  record Sigma (A : Set) (B : A → Set) : Set where
+    constructor _,_
+    field fst : A
+          snd : B fst
+
+
+  syntax Sigma A (λ x → P) = [ x ∈ A :: P ]
+
+  Sucs = [ (x , y) ∈ ℕ × ℕ :: y ≡ x + 1 ]
+
+  m : Sucs
+  m = ( (2 , 3) , refl ) 
+
+  Var = String
+  Σ' = Var → ℕ
+
+
+
+  data Arith : Set where
+    CONST : ℕ → Arith
+    VAR : Var → Arith
+    _PLUS_ : Arith → Arith → Arith
+    _TIMES_ : Arith → Arith → Arith
+    _MINUS_ : Arith → Arith → Arith
+
+  data Boolean : Set where
+    TRUE : Boolean
+    FALSE : Boolean
+
+  B⟦_⟧ : Boolean → Σ' → Bool
+  B⟦ TRUE ⟧ _ = true
+  B⟦ FALSE ⟧ _ = false
+
+  data Cmd : Set where 
+    SKIP   : Cmd
+    _::=_ : Var → Arith → Cmd
+    _::_ : Cmd → Cmd → Cmd
+    WHILE_DO_DONE : Boolean → Cmd → Cmd
+
+  _[_/_] : Arith → Arith → Var → Arith
+  CONST n [ e / x ] = CONST n
+  VAR y [ e / x ] with y ≟ x
+  ... | yes _ = e
+  ... | no  _ = VAR y
+  (n PLUS m) [ e / x ] =  (n [ e / x ]) PLUS (m [ e / x ])
+  (n TIMES m) [ e / x ] =  (n [ e / x ]) TIMES (m [ e / x ])
+  (n MINUS m) [ e / x ] =  (n [ e / x ]) MINUS (m [ e / x ])
+
+
+  _[_↦_] : Σ' → Var → ℕ → Σ'
+  (σ [ X ↦ n ]) Y with Y ≟ X
+  ... | yes _ = n
+  ... | no  _ = σ Y
+
+
+
+  ℕ⟦_⟧ : Arith → Σ' → ℕ
+  ℕ⟦ CONST n ⟧ σ = n
+  ℕ⟦ VAR x ⟧ σ = σ x
+  ℕ⟦ n PLUS m ⟧ σ = ℕ⟦ n ⟧ σ + ℕ⟦ m ⟧ σ
+  ℕ⟦ n TIMES m ⟧ σ = ℕ⟦ n ⟧ σ * ℕ⟦ m ⟧ σ
+  ℕ⟦ n MINUS m ⟧ σ = ℕ⟦ n ⟧ σ ∸ ℕ⟦ m ⟧ σ
+
+ 
+
+  
+  C⟦_⟧ : Cmd → Σ' → Σ' → Set
+  C⟦ SKIP ⟧ σ σ' = σ ≡ σ' 
+  C⟦ (x ::= e) ⟧ σ σ' = σ' ≡ (σ [ x ↦ ℕ⟦ e ⟧ σ ])
+  C⟦ (cmd :: cmd') ⟧ = (C⟦ cmd ⟧ ) ◯ (C⟦ cmd' ⟧ )
+  C⟦ (WHILE b DO cmd DONE) ⟧ = least-fixpoint (W B⟦ b ⟧ C⟦ cmd ⟧ )
+    where
+      T = Rel Σ' lzero -- Σ' → Σ' → Set
+
+      _⊆'_ : Rel T lzero
+      X ⊆' Y = ∀ {σ σ'} →  X σ σ' → Y σ σ'  
+      
+      postulate
+        Π : SET T lzero → T
+        
+      W : (Σ' → Bool) → T → ( T → T )
+      W cond d d' = λ σ σ' → 
+        if cond σ then 
+          (d ◯ d') σ σ'
+        else 
+          σ ≡ σ'
+      
+      least-fixpoint :  (T → T) → T 
+      least-fixpoint  f =  Π (λ x → f x ⊆' x)  
