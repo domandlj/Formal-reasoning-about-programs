@@ -205,8 +205,8 @@ module Structures
   record IsCompleteLattice (_≤_ : Rel A ℓ₂) (Π : SET A ℓ₂ → A) : Set (a ⊔  ℓ ⊔ lsuc ℓ₂) where
     field
       isPartialOrder : IsPartialOrder _≤_
-      lub : ∀ {X} {x} → x ∈ X → Π X ≤ x
-      gtLub : ∀ {X} {y} → (∀ {x} → x ∈ X → y ≤ x) → y ≤ Π X
+      glb : ∀ {X} {x} → x ∈ X → Π X ≤ x
+      gtGlb : ∀ {X} {y} → (∀ {x} → x ∈ X → y ≤ x) → y ≤ Π X
   
   lfp :
        (_≤_ : Rel A ℓ₃ ) 
@@ -226,7 +226,7 @@ module Structures
     → (h : f x ≤ x)
     ---------------------
     → lfp _≤_ Π cl f ≤ x
-  lfpLe _≤_ Π cl f x h = IsCompleteLattice.lub cl h
+  lfpLe _≤_ Π cl f x h = IsCompleteLattice.glb cl h
 
   Lelfp : 
       (_≤_ : Rel A ℓ₃ ) 
@@ -238,7 +238,7 @@ module Structures
     -------------------------------------
     → x ≤ lfp _≤_ Π cl f
 
-  Lelfp _≤_ Π cl f x h = IsCompleteLattice.gtLub cl h
+  Lelfp _≤_ Π cl f x h = IsCompleteLattice.gtGlb cl h
 
   isFixpoint : 
       (_≤_ : Rel A ℓ₃ ) 
@@ -255,14 +255,14 @@ module Structures
       
       x≤fx : lfp _≤_ Π cl f ≤ f (lfp _≤_ Π cl f)
       x≤fx = lfpLe _≤_ Π cl f x (f-monotone
-          (IsCompleteLattice.gtLub cl
+          (IsCompleteLattice.gtGlb cl
             (λ z → IsPartialOrder.transitive (IsCompleteLattice.isPartialOrder cl)
-              (f-monotone (IsCompleteLattice.lub cl z)) z)))
+              (f-monotone (IsCompleteLattice.glb cl z)) z)))
       
       fx≤x : f (lfp _≤_ Π cl f) ≤ lfp _≤_ Π cl f  
       fx≤x = Lelfp _≤_ Π cl f x λ z →
         IsPartialOrder.transitive (IsCompleteLattice.isPartialOrder cl)
-        (f-monotone (IsCompleteLattice.lub cl z)) z
+        (f-monotone (IsCompleteLattice.glb cl z)) z
       
       antisim = IsPartialOrder.antisym (IsCompleteLattice.isPartialOrder cl) 
       
