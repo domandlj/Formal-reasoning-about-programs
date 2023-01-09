@@ -71,6 +71,12 @@ _◯_ : {A : Set a} {B : Set b} {C : Set c}
   → REL A C (b ⊔  ℓ₁ ⊔ ℓ₂ )
   
 (R ◯ S) x y = ∃ λ z → R x z × S z y
+
+
+
+
+
+
   -- it's the same as Σ _ (λ z → R x z × S z y)
 
 -- R ⇃ P = {(x, y) | (x, y) ∈ R ∧ P x}
@@ -329,24 +335,27 @@ module Structures
   ℕ⟦ n PLUS m ⟧ σ = ℕ⟦ n ⟧ σ + ℕ⟦ m ⟧ σ
   ℕ⟦ n TIMES m ⟧ σ = ℕ⟦ n ⟧ σ * ℕ⟦ m ⟧ σ
   ℕ⟦ n MINUS m ⟧ σ = ℕ⟦ n ⟧ σ ∸ ℕ⟦ m ⟧ σ
+  
 
- 
+
+  T = Rel Σ' lzero 
+
+  ⋂ : ∀ (I : SET T lzero) → {X : T} → T 
+  ⋂ I {X} = λ σ σ' → ( I X → X σ σ')
+  
+  _⊆'_ : Rel T lzero
+  X ⊆' Y = ∀ {σ σ'} →  X σ σ' → Y σ σ' 
+  
+
 
   
-  C⟦_⟧ : Cmd → Σ' → Σ' → Set
-  C⟦ SKIP ⟧ σ σ' = σ ≡ σ' 
-  C⟦ (x ::= e) ⟧ σ σ' = σ' ≡ (σ [ x ↦ ℕ⟦ e ⟧ σ ])
-  C⟦ (cmd :: cmd') ⟧ = (C⟦ cmd ⟧ ) ◯ (C⟦ cmd' ⟧ )
-  C⟦ (WHILE b DO cmd DONE) ⟧ = least-fixpoint (W B⟦ b ⟧ C⟦ cmd ⟧ )
+  denote : ∀ {X : T} →  Cmd → Σ' → Σ' → Set
+  denote {X} (SKIP) σ σ' = σ ≡ σ' 
+  denote {X} (x ::= e) σ σ' = σ' ≡ (σ [ x ↦ ℕ⟦ e ⟧ σ ])
+  denote {X} (cmd :: cmd') = (denote {X} cmd ) ◯ (denote {X} cmd')
+  denote {X} (WHILE b DO cmd DONE)  = least-fixpoint {X} (W B⟦ b ⟧ (denote {X} cmd) )
     where
-      T = Rel Σ' lzero -- Σ' → Σ' → Set
-
-      _⊆'_ : Rel T lzero
-      X ⊆' Y = ∀ {σ σ'} →  X σ σ' → Y σ σ'  
-      
-      postulate
-        Π : SET T lzero → T
-        
+              
       W : (Σ' → Bool) → T → ( T → T )
       W cond d d' = λ σ σ' → 
         if cond σ then 
@@ -354,5 +363,14 @@ module Structures
         else 
           σ ≡ σ'
       
-      least-fixpoint :  (T → T) → T 
-      least-fixpoint  f =  Π (λ x → f x ⊆' x)  
+      least-fixpoint :  ∀ {X : T} → (T → T) → T 
+      least-fixpoint {X} f =  ⋂ (λ x → f x ⊆' x) {X}
+
+  teo : {X : T} → denote {X} ( SKIP :: SKIP) ≡ denote {X} (SKIP) 
+  teo {X} = begin
+      denote {X} ( SKIP :: SKIP)
+    ≡⟨ {!   !} ⟩
+      denote {X} (SKIP)
+    ∎
+       
+        
