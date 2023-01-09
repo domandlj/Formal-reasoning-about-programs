@@ -365,12 +365,3 @@ module Structures
       
       least-fixpoint :  ∀ {X : T} → (T → T) → T 
       least-fixpoint {X} f =  ⋂ (λ x → f x ⊆' x) {X}
-
-  teo : {X : T} → denote {X} ( SKIP :: SKIP) ≡ denote {X} (SKIP) 
-  teo {X} = begin
-      denote {X} ( SKIP :: SKIP)
-    ≡⟨ {!   !} ⟩
-      denote {X} (SKIP)
-    ∎
-       
-        
