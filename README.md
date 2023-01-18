@@ -23,5 +23,17 @@ Work in progress, i'm trying to mechanize the book "Formal Reasoning About Progr
 # Automation
 For now just using Z3 via schmitty for a decidable theory of naturals. 
 
+# Books about PL theory and formal methods in proof assistants.
+| **Book**                                         | **Proof assistant** | **Authors**                                                                         |
+| ------------------------------------------------ | ------------------- | ----------------------------------------------------------------------------------- |
+| `Software Foundations`                           | **Coq**             | Benjamin C. Pierce, a lot more.                                                     |
+| `Formal Reasoning About Programs`                | **Coq**             | Adam Chlipala.                                                                      |
+| `Certified Programming with Dependent Types`     | **Coq**             | Adam Chlipala.                                                                      |
+| `Programming Language Foundations in Agda`       | **Agda**            | Philip Wadler and Wen Kokke and Jeremy G. Siek.                                     |
+| `Verified Functional Programming in Agda`        | **Agda**            | Aaron Stump.                                                                        |
+| `Type-Driven Development with  Idris`            | **Idris**           | Edwin Brady.                                                                        |
+| `Concrete Semantics: With Isabelle/HOL`          | **Isabelle/HOL**    | Tobias Nipkow, Gerwin Klein.                                                        |
+| `The Hitchhiker’s Guide to Logical Verification` | **Lean**            | Anne Baanen, Alexander Bentkamp, Jasmin Blanchette, Johannes Hölzl, Jannis Limperg. |
+|                                                  |                     |                                                                                     |
 # Requirements
 `schmitty`
