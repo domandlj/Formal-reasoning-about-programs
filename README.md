@@ -17,6 +17,7 @@ Work in progress, i'm trying to mechanize the book "Formal Reasoning About Progr
 | ---------------------------- | -------------------------------------------------------------------------------------------------------- |
 | `InternalExternalVerif.agda` | Verification of functional programs, internal or external                                                |
 | `Tarski.agda`                | Denotational semantics of imperative lang in relational style. Proof of  Knaster–Tarski fixpoint theorem |
+| `Cats.agda`                  | Some category theory                                                                                     |
 
 
 # Automation
