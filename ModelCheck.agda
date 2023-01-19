@@ -43,7 +43,8 @@ if for some n Reach(n+1) = Reach(n) then Reach(n) is an invariant
 -}
   
 
-record OneStepClosureCurrent {State} (sys : TransSys State) (invariant1 invariant2 : State → Set) : Set where
+record OneStepClosureCurrent {State} (sys : TransSys State) 
+  (invariant1 invariant2 : State → Set) : Set where
   field
     oneStepClosureCurrent : 
               ∀ (s : State) 
@@ -51,7 +52,8 @@ record OneStepClosureCurrent {State} (sys : TransSys State) (invariant1 invarian
             ----------------
             →  invariant2 s
 
-record OneStepClosureNew {State} (sys : TransSys State) (invariant1 invariant2 : State → Set) : Set where
+record OneStepClosureNew {State} (sys : TransSys State) 
+  (invariant1 invariant2 : State → Set) : Set where
   field
     oneStepClosureNew : 
               ∀ (s s' : State) 
@@ -60,7 +62,8 @@ record OneStepClosureNew {State} (sys : TransSys State) (invariant1 invariant2 :
             ---------------------------
             →  invariant2 s'
 
-record OneStepClosure {State} (sys : TransSys State) (invariant1 invariant2 : State → Set) : Set where
+record OneStepClosure {State} (sys : TransSys State) 
+  (invariant1 invariant2 : State → Set) : Set where
   field
     oneStepClosure : 
                   (OneStepClosureCurrent sys invariant1 invariant2) 
@@ -69,7 +72,8 @@ record OneStepClosure {State} (sys : TransSys State) (invariant1 invariant2 : St
 
 
 
-proveOneStepClosure : ∀ {State} (sys : TransSys State) (invariant1 invariant2 : State → Set)
+proveOneStepClosure : ∀ {State} (sys : TransSys State) 
+  (invariant1 invariant2 : State → Set)
   
   → (∀ (s  : State) → invariant1 s → invariant2 s)
   → (∀ (s s' : State) → invariant1 s → (TransSys.step sys) s s' → invariant2 s')
@@ -96,7 +100,8 @@ oneStepClosureDone sys inv r1 r2 = h
 
 
 
-data MultiStepClosure : ∀ {State} (sys : TransSys State) (inv inv' : State → Set) → Set₁ where
+data MultiStepClosure : ∀ {State} (sys : TransSys State) 
+  (inv inv' : State → Set) → Set₁ where
   mscDone :  ∀ {State} {sys : TransSys State} {inv} 
     
       → OneStepClosure sys inv inv 
@@ -115,14 +120,16 @@ data MultiStepClosure : ∀ {State} (sys : TransSys State) (inv inv' : State →
 
 
 
-multiStepClosureOk' : ∀ {State} (sys : TransSys State) (inv inv' : State → Set)
+multiStepClosureOk' : ∀ {State} (sys : TransSys State) 
+  (inv inv' : State → Set)
 
   → (MultiStepClosure sys inv inv')
   → (∀ (s : State) → (TransSys.initial sys) s → inv' s)
   ------------------------------------------------------
   → InvariantFor sys inv'
 
-multiStepClosureOk' sys inv .inv (mscDone x) r2 = oneStepClosureDone sys inv r2 (record
+multiStepClosureOk' sys inv .inv (mscDone x) r2 = 
+  oneStepClosureDone sys inv r2 (record
  { oneStepClosure =
      record { oneStepClosureCurrent = λ s z → z } ,
      record
@@ -131,7 +138,8 @@ multiStepClosureOk' sys inv .inv (mscDone x) r2 = oneStepClosureDone sys inv r2 
          (Data.Product.proj₂ (OneStepClosure.oneStepClosure x))
      }
  }) 
-multiStepClosureOk' sys inv inv' (mscStep .inv inv'' .inv' x r1) r2 = multiStepClosureOk'  sys inv'' inv' r1 r2
+multiStepClosureOk' sys inv inv' (mscStep .inv inv'' .inv' x r1) r2 = 
+  multiStepClosureOk'  sys inv'' inv' r1 r2
 
 
 
@@ -141,7 +149,9 @@ multiStepClosureOk : ∀ {State} (sys : TransSys State) (inv : State → Set)
   → (MultiStepClosure sys (TransSys.initial sys) inv)
   ---------------------------------------------------
   → InvariantFor sys inv
-multiStepClosureOk sys@record { initial = initial ; step = step } .initial m@(mscDone x) = multiStepClosureOk' sys initial initial m λ s z → z
+  
+multiStepClosureOk sys@record { initial = initial ; step = step } .initial m@(mscDone x) = 
+  multiStepClosureOk' sys initial initial m λ s z → z
 multiStepClosureOk {State} sys@record { initial = initial ; step = step } inv 
   m@(mscStep {sys = sys} .initial i2 .inv record { oneStepClosure = (record { oneStepClosureCurrent = oneStepClosureCurrent } , snd) } multi) = h
   where
@@ -151,7 +161,5 @@ multiStepClosureOk {State} sys@record { initial = initial ; step = step } inv
       inv⇒i2 : ∀  (s : State) →  (inv s) → (i2 s)
 
     h = multiStepClosureOk' sys initial inv m (λ s i → i2⇒inv s (oneStepClosureCurrent s i))
-
-
 
 
