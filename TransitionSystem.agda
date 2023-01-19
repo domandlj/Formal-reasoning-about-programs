@@ -123,12 +123,15 @@ factorialSys n₀ = record
 
 
 -- For a ts ⟨S, S₀, →⟩ Reachable = {s ∈ S | s₀ ∈ S₀  ∧ s₀ →✷ s }
-data Reachable : ∀ {State : Set} → (sys : TransSys State) → (s : State) → Set₁ where
+data Reachable : ∀ {State : Set} 
+  → (sys : TransSys State) 
+  → (s : State) → Set₁ where
 
   reachable : ∀ {State} {sys : TransSys State} {s₀ s : State}
   
-      → (TransSys.initial sys) s₀               → ✷ (TransSys.step sys) s₀ s
-      --------------------------------------------------------------------------
+      → (TransSys.initial sys) s₀              
+      → ✷ (TransSys.step sys) s₀ s
+      -------------------------------------------------------
         →  Reachable sys s
 
 -- For a ts ⟨S, S₀, →⟩, I ⊆ S is an invariant if Reachable ⊆ I
@@ -137,47 +140,63 @@ data Reachable : ∀ {State : Set} → (sys : TransSys State) → (s : State) �
 
 
 
-record InvariantFor {State : Set} (sys : TransSys State) (invariant : State → Set) : Set₁  where
+record InvariantFor {State : Set} (sys : TransSys State) 
+  (invariant : State → Set) : Set₁  where
   field
-    invariantFor : ∀ {State : Set} (sys : TransSys State) (invariant : State → Set) 
-  
+    invariantFor : ∀ {State : Set} 
+      (sys : TransSys State) 
+      (invariant : State → Set) 
       → ∀ (s : State) → (TransSys.initial sys) s        
       → ∀ (s' : State) → ✷ (TransSys.step sys) s s'
       ----------------------------------------------
-          → invariant s
+      → invariant s
 
-useInvariant' : ∀ {State : Set} (sys : TransSys State) (invariant : State → Set) (s s' : State)
+useInvariant' : ∀ {State : Set} 
+  (sys : TransSys State) 
+  (invariant : State → Set) 
+  (s s' : State)
 
-    → InvariantFor sys invariant       
-    → (TransSys.initial sys) s        
-    → ✷ (TransSys.step sys) s s'
-    ------------------------------
-          → invariant s' 
+  → InvariantFor sys invariant       
+  → (TransSys.initial sys) s        
+  → ✷ (TransSys.step sys) s s'
+  ------------------------------
+  → invariant s' 
 
 useInvariant' = λ sys invariant s s' z z₁ →
   InvariantFor.invariantFor z sys (λ _ → invariant s') s z₁ s'
 
 
-useInvariant : ∀ {State : Set} (sys : TransSys State) (invariant : State → Set) (s : State)
+useInvariant : ∀ {State : Set} 
+  (sys : TransSys State) 
+  (invariant : State → Set) 
+  (s : State)
 
-    → InvariantFor sys invariant       
-    → Reachable sys s        
-    ------------------------------
-      → invariant s 
+  → InvariantFor sys invariant       
+  → Reachable sys s        
+  ------------------------------
+  → invariant s 
 
-useInvariant sys invariant s inv (reachable {s₀ = s₀} {s = s} init step) = 
-  useInvariant' sys invariant s₀ s inv init step
+useInvariant sys invariant s inv 
+  (reachable {s₀ = s₀} {s = s} init step) = 
+    useInvariant' sys invariant s₀ s inv init step
 
 
 
  
 postulate
-  invariantInduction :  ∀ {State : Set} (sys : TransSys State) (invariant : State → Set)
+  invariantInduction :  ∀ {State : Set} 
+    (sys : TransSys State) 
+    (invariant : State → Set)
 
     → ( ∀ (s : State) →  (TransSys.initial sys) s →  invariant s)
-    → (∀ (s : State) → invariant s → ∀ (s' : State) →  (TransSys.step sys) s s' → invariant s')
-    --------------------------------------------------------------------------------------------------
-           → InvariantFor sys invariant
+    → (∀ (s : State) 
+      → invariant s 
+      → ∀ (s' : State) 
+      →  (TransSys.step sys) s s' 
+      → invariant s'
+    )
+    -------------------------------------------------------------------
+    → InvariantFor sys invariant
   -- this can be proved.
   
 
@@ -229,34 +248,44 @@ invariantFactorialCorrect : ∀ (n : ℕ) →
     InvariantFor (factorialSys n) (invariantFactorial n)
     
 invariantFactorialCorrect n = 
-  invariantInduction (factorialSys n) (invariantFactorial n) baseCase inductiveCase
+  invariantInduction 
+    (factorialSys n) 
+    (invariantFactorial n) 
+    baseCase 
+    inductiveCase
   where
-    baseCase : ∀ (s : FactState) → FactInit n s → invariantFactorial n s
+    baseCase : ∀ (s : FactState) 
+
+      → FactInit n s 
+      --------------------------
+      → invariantFactorial n s
     baseCase (acc x .1) factInit
       rewrite  n*1≡n (x !)  = refl
     
     inv-trans : ∀ (n : ℕ) ( s s' : FactState)
         
-        → invariantFactorial n s
-        → ⊳ s s'
-        ---------------------------
-         →  invariantFactorial n s'
+      → invariantFactorial n s
+      → ⊳ s s'
+      ---------------------------
+      →  invariantFactorial n s'
  
     inv-trans n .(acc 0 _) .(return _) invFact factDone 
       rewrite m≡n+0⇒m≡n invFact = refl
-    inv-trans n .(acc (m + 1) a) .(acc m (a * (m + 1))) invFact (factStep m a)
+    inv-trans n .(acc (m + 1) a) .(acc m (a * (m + 1))) 
+      invFact (factStep m a)
       rewrite identity1 m a
         | invFact = refl
     
     inductiveCase : ∀  (s : FactState) 
 
-            → invariantFactorial n s 
-            → ∀ (s' : FactState) 
-            → TransSys.step (factorialSys n) s s'
-            --------------------------------------
-            → invariantFactorial n s'
+      → invariantFactorial n s 
+      → ∀ (s' : FactState) 
+      → TransSys.step (factorialSys n) s s'
+      --------------------------------------
+      → invariantFactorial n s'
             
-    inductiveCase s invFact s' step  = inv-trans n s s' invFact step
+    inductiveCase s invFact s' step  = 
+      inv-trans n s s' invFact step
 
 invariantFactorialAlways :  ∀ (n : ℕ) (s : FactState) 
 
@@ -265,7 +294,10 @@ invariantFactorialAlways :  ∀ (n : ℕ) (s : FactState)
     →  invariantFactorial n s 
 
 invariantFactorialAlways n s reach = 
-  useInvariant (factorialSys n) (invariantFactorial n) s (invariantFactorialCorrect n) reach
+  useInvariant 
+    (factorialSys n) 
+    (invariantFactorial n) 
+    s (invariantFactorialCorrect n) reach
 
 factOk' : ∀ (n : ℕ) (s : FactState) →
 
@@ -402,37 +434,47 @@ data ParallelInit {Shared Priv1 Priv2 : Set}
 
     → Init1 (record { shared = sh ; priv = pr1 }) 
     → Init2 (record { shared = sh ; priv = pr2 }) 
-    -----------------------------------------------------------------------
-    → ParallelInit Init1 Init2 (record { shared = sh ; priv = (pr1 , pr2) })
+    --------------------------------------------------------------------
+    → ParallelInit Init1 Init2 
+        (record { shared = sh ; priv = (pr1 , pr2) })
 
 
 data ParallelStep {Shared Priv1 Priv2 : Set}  
-    (Step1 : (ThreadedState Shared Priv1) → (ThreadedState Shared Priv1) → Set)
-    (Step2 : (ThreadedState Shared Priv2) → (ThreadedState Shared Priv2) → Set)  
-    : (ThreadedState Shared (Priv1 × Priv2)) → (ThreadedState Shared (Priv1 × Priv2)) → Set  where
+    (Step1 : (ThreadedState Shared Priv1) 
+      → (ThreadedState Shared Priv1) → Set)
+    (Step2 : (ThreadedState Shared Priv2)  
+      → (ThreadedState Shared Priv2) → Set)  
+    : (ThreadedState Shared (Priv1 × Priv2)) 
+      → (ThreadedState Shared (Priv1 × Priv2)) → Set  where
 
   -- fst thread runs
-  p-step1 : ∀ (sh sh' : Shared) (pr1 pr1' : Priv1) (pr2 : Priv2)
-
+  p-step1 : ∀ (sh sh' : Shared) 
+    (pr1 pr1' : Priv1) 
+    (pr2 : Priv2)
     
-    → Step1 (record { shared = sh ; priv = pr1 }) (record { shared = sh' ; priv = pr1' })
-    -------------------------------------------------------------------------------------
+    → Step1 (record { shared = sh ; priv = pr1 }) 
+      (record { shared = sh' ; priv = pr1' })
+    --------------------------------------------------------------
     → ParallelStep Step1 Step2
           (record { shared = sh ; priv = (pr1 , pr2) })
           (record { shared = sh' ; priv = (pr1' , pr2) })
   
   -- snd thread runs        
-  p-step2 : ∀ (sh sh' : Shared) (pr1 : Priv1) (pr2 pr2' : Priv2)
+  p-step2 : ∀ (sh sh' : Shared) 
+    (pr1 : Priv1) 
+    (pr2 pr2' : Priv2)
 
     
-    → Step2 (record { shared = sh ; priv = pr2 }) (record { shared = sh' ; priv = pr2' })
-    -------------------------------------------------------------------------------------
+    → Step2 (record { shared = sh ; priv = pr2 }) 
+      (record { shared = sh' ; priv = pr2' })
+    ------------------------------------------------------------
     → ParallelStep Step1 Step2
           (record { shared = sh ; priv = (pr1 , pr2) })
           (record { shared = sh' ; priv = (pr1 , pr2') })
 
 
-Parallel : {Shared : Set} → {Priv1 : Set} → {Priv2 : Set} 
+Parallel : {Shared Priv1 Priv2 : Set} 
+
     → TransSys (ThreadedState Shared Priv1) 
     → TransSys (ThreadedState Shared Priv2)
     --------------------------------------------------
@@ -440,17 +482,23 @@ Parallel : {Shared : Set} → {Priv1 : Set} → {Priv2 : Set}
     
 Parallel Sys1 Sys2 = record 
   {
-    initial = ParallelInit ((TransSys.initial) Sys1) ((TransSys.initial) Sys2)
-    ; step = ParallelStep ((TransSys.step) Sys1) ((TransSys.step) Sys2)
+    initial = ParallelInit 
+      ((TransSys.initial) Sys1) 
+      ((TransSys.initial) Sys2)
+    ; step = ParallelStep 
+      ((TransSys.step) Sys1) 
+      ((TransSys.step) Sys2)
   }
 
 Increment2Sys = Parallel IncrementSys IncrementSys
 
 
 -- invariant
-data Increment2Invariant : ThreadedState IncState (IncrementProgram × IncrementProgram) → Set where
+data Increment2Invariant : ThreadedState 
+  IncState (IncrementProgram × IncrementProgram) → Set where
 
-  inct2inv :  ∀ {sh : IncState } {pr1 pr2 : IncrementProgram}
+  inct2inv :  ∀ {sh : IncState } 
+    {pr1 pr2 : IncrementProgram}
   
     --------------------------------------------------------------------
     → Increment2Invariant (record { shared = sh  ; priv = pr1 , pr2 })
@@ -464,26 +512,38 @@ Increment2InvariantOk = invariantInduction (record
       }) Increment2Invariant baseCase inductiveCase 
   where
 
-    baseCase : ∀ (s : ThreadedState IncState (IncrementProgram × IncrementProgram)) 
-            → ParallelInit IncrementInit IncrementInit s 
-            → Increment2Invariant s
-    baseCase .(record { shared = sh ; priv = pr1 , pr2 }) (p-init sh pr1 pr2 x x₁) = inct2inv
+    baseCase : ∀ (s : ThreadedState IncState 
+          (IncrementProgram × IncrementProgram)) 
+          
+      → ParallelInit IncrementInit IncrementInit s 
+      -------------------------------------------------
+      → Increment2Invariant s
+    baseCase .(record { shared = sh ; priv = pr1 , pr2 }) 
+      (p-init sh pr1 pr2 x x₁) = inct2inv
 
     
-    inductiveCase : ∀ (s : ThreadedState IncState (IncrementProgram × IncrementProgram)) 
+    inductiveCase : ∀ (s : ThreadedState IncState 
+      (IncrementProgram × IncrementProgram)) 
+      
       → Increment2Invariant s 
-      → ∀ (s' : ThreadedState IncState (IncrementProgram × IncrementProgram)) 
-      → ParallelStep IncrementStep IncrementStep s s' 
+      → ∀ (s' : ThreadedState IncState 
+        (IncrementProgram × IncrementProgram)) 
+      → ParallelStep IncrementStep IncrementStep s s'
+      -------------------------------------------------
       →  Increment2Invariant s'
     inductiveCase .(record { shared = _ ; priv = _ , _ }) 
-      inct2inv .(record { shared = sh' ; priv = pr1' , _ }) (p-step1 _ sh' _ pr1' _ x) = inct2inv
+      inct2inv .(record { shared = sh' ; priv = pr1' , _ }) 
+      (p-step1 _ sh' _ pr1' _ x) = inct2inv
     inductiveCase .(record { shared = _ ; priv = _ , _ }) 
-      inct2inv .(record { shared = sh' ; priv = _ , pr2' }) (p-step2 _ sh' _ _ pr2' x) = inct2inv
+      inct2inv .(record { shared = sh' ; priv = _ , pr2' }) 
+      (p-step2 _ sh' _ _ pr2' x) = inct2inv
 
 
 -- when one invariant implies another ? 
 
-InvariantWeaken : ∀ {State} (sys : TransSys State) (invariant1 invariant2 : State → Set)
+InvariantWeaken : ∀ {State} 
+  (sys : TransSys State) 
+  (invariant1 invariant2 : State → Set)
   
   → InvariantFor sys invariant1
   →  (∀ (s : State) → invariant1 s → invariant2 s)
@@ -493,7 +553,9 @@ InvariantWeaken : ∀ {State} (sys : TransSys State) (invariant1 invariant2 : St
 InvariantWeaken sys invariant1 invariant2 z _ =
   record
   { invariantFor =
-      λ sys₁ invariant s → InvariantFor.invariantFor z sys₁ (λ _ → invariant s) s
+      λ sys₁ invariant s
+        → InvariantFor.invariantFor 
+          z sys₁ (λ _ → invariant s) s
   }
 
 
