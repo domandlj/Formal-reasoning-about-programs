@@ -1,7 +1,13 @@
 module Cats where
 import Relation.Binary.PropositionalEquality as Eqq
-open Eqq using (_≡_; refl; cong; cong₂; sym ; trans; cong-app)
+open Eqq using (_≡_; refl; cong; cong₂; sym ; trans; cong-app; isDecEquivalence)
 open Eqq.≡-Reasoning using (begin_; _≡⟨⟩_; step-≡; _∎)
+open import Data.Product
+open import Data.String
+open import Data.Nat using (ℕ; zero; suc; _+_)
+
+    
+
 
 postulate
   extensionality : ∀ {A B : Set} {f g : A → B}
@@ -21,6 +27,7 @@ _∘_ : {A B C : Set}
   → (A → C)
 
 g ∘ f = λ x → g (f x)
+
 
 
 ------------------------------------------------------------------------
@@ -116,6 +123,8 @@ data List (A : Set) : Set where
   nil : List A 
   cons : A → List A → List A
 
+
+
 --List fmap-------------------------------------------------------------
 fmap-list : {A B : Set} → (A → B) → List A → List B
 fmap-list f nil = nil
@@ -159,8 +168,176 @@ instance
     ; law-id = law-id-list 
     ; law-comp = law-comp-list
     }
-    
 
+------------------------------------------------------------------------
+--                     Monoid as type class                           --
+------------------------------------------------------------------------
+record Monoid (A : Set) : Set where
+  field
+    --Operations--------------
+    mempty : A
+    _<>_   : A → A → A
+
+  field
+    --Laws-------------------------------
+    id-monoidˡ : ∀ (x : A) → x <> mempty  ≡ x
+    id-monoidʳ : ∀ (x : A) → mempty <> x ≡ x
+    assoc-monoid : ∀ (x y z : A) → (( x <> y ) <> z) ≡ (x <> (y <> z))
+
+
+open Monoid {{...}} public
+
+--List Monoid-----------------------------------------------------------
+
+instance
+  monoid-list : {A : Set} → Monoid (List A)
+  monoid-list {A} = record { 
+        mempty = nil 
+      ; _<>_ = _∷_
+      ; id-monoidˡ = id-monoidˡ-list
+      ; id-monoidʳ = λ x → refl
+      ; assoc-monoid = assoc-monoid-list  
+    }
+    where 
+      _∷_ : {A : Set} → List A → List A → List A
+      _∷_ nil ys = ys
+      _∷_ (cons x xs) ys = cons x (xs ∷ ys)
+
+      --Id list---------------------------------------------------------
+      id-monoidˡ-list : {A : Set} →  (xs : List A) → xs ∷ nil ≡ xs
+      id-monoidˡ-list {A} nil = refl
+      id-monoidˡ-list {A} (cons y ys) 
+        rewrite (id-monoidˡ-list {A} ys) = refl
+
+      --Assoc  list-----------------------------------------------------
+      assoc-monoid-list : {A : Set} 
+        (xs ys zs : List A) 
+        → ((xs ∷ ys) ∷ zs) ≡ (xs ∷ (ys ∷ zs))
+      assoc-monoid-list {A} nil ys zs = refl
+      assoc-monoid-list {A} (cons x xs) ys zs 
+        rewrite assoc-monoid-list {A} xs ys zs = refl 
+          
+
+
+--String Monoid---------------------------------------------------------
+instance
+  monoid-string : Monoid (String)
+  monoid-string = record {
+      mempty = "" 
+    ; _<>_ = _++_ 
+    ; id-monoidˡ = id-monoidˡ-string
+    ; id-monoidʳ = id-monoidʳ-string
+    ; assoc-monoid = assoc-monoid-string
+    }
+    where
+      postulate
+        id-monoidˡ-string : ∀ (x : String) → x ++ "" ≡  x
+        id-monoidʳ-string : ∀ (x : String) →  "" ++ x ≡  x
+        assoc-monoid-string : ∀ (x y z : String) 
+          → (x ++ y) ++ z ≡ x ++ (y ++ z)
+
+        
+    
+      
+--Reader Functor--------------------------------------------------------
+
+Writer : Set → Set → Set
+Writer = λ M A → A × M
+
+id-writer : {A M : Set} → {{Monoid M}} → A →  Writer M A
+id-writer x = (x , mempty)
+
+_>=>_ : {A B C M : Set} 
+  → {{Monoid M}}
+  
+  → (A → Writer M B)
+  → (B → Writer M C)
+  ------------------
+  → (A → Writer M C)
+
+f >=> g = λ x →
+    let
+      (x' , log) = f x
+      (x'' , log') = g x'
+    in
+      (x'' , log <> log')
+
+law-id-writer : {A M : Set} 
+    
+  → {{monoidM : Monoid M}} 
+  → (x : Writer M A) 
+  -----------------------------------------
+  → (id >=> (λ y → id-writer (id y))) x ≡ x
+
+law-id-writer  {{monoidM}} (x , log) = begin
+    (id >=> g) (x , log)
+  ≡⟨⟩
+    ( x , (log <> mempty ) )
+  ≡⟨ cong ((λ z → ( x , z) )) (Monoid.id-monoidˡ monoidM log)⟩
+   (x , log)
+  ∎
+  where
+    g = (λ y → id-writer {{monoidM}} (id y))
+
+    
+ 
+  
+
+instance
+  WriterFunctor : {M : Set} → {{Monoid M}} → Functor (Writer M)
+  WriterFunctor = record {
+      fmap = λ f → id >=> (λ x -> id-writer (f x)) 
+    ; law-id = law-id-writer
+    ; law-comp = {!   !}
+    }
+  
+
+
+------------------------------------------------------------------------
+--                     Monad as type class                          --
+------------------------------------------------------------------------
+record Monad (M : Set → Set) : Set₁  where
+ 
+ field
+  --Operations---------------------------------
+  return : {A : Set} → A → M A
+  _>>=_  : {A B : Set} → M A → (A → M B) → M B 
+
+open Monad {{...}} public
+
+
+--Reader Monad---------------------------------------------------------
+
+
+instance
+  WriterMonad : {M : Set} → {{Monoid M}} → Monad (Writer M)
+  WriterMonad = record
+    { return = id-writer
+    ; _>>=_ = _>>=-writer_
+    }
+    where
+      _>>=-writer_ : {A B M : Set} → {{Monoid M}} 
+        → Writer M A → (A → Writer M B) → Writer M B
+      (x , log) >>=-writer f = 
+        let 
+          (x' , log') = f x 
+        in 
+          (x' , log <> log')
+
+log-number : ℕ → Writer (List (String)) ℕ  
+log-number x =  (x , cons ("Got number: " ++ nat-to-str x) nil )
+  where
+    nat-to-str : ℕ → String
+    nat-to-str zero = "0"
+    nat-to-str (suc n) = "S" ++ nat-to-str n
+  
+plus-log : ℕ → ℕ → Writer (List String) ℕ  
+plus-log x y = do  
+    a  ← log-number x  
+    b  ← log-number y  
+    return (a + b)
+
+          
 ------------------------------------------------------------------------
 --                           Category theory                          --
 ------------------------------------------------------------------------
@@ -195,11 +372,21 @@ record Category : Set₂ where
 infix 10  _[_,_] _[_∘_]
 
 -- 𝒞 [ A , B ] is Hom𝒞(A , B) 
-_[_,_] : (𝒞 : Category) → (X : Category.Obj 𝒞) → (Y : Category.Obj 𝒞) → Set
+_[_,_] : (𝒞 : Category) 
+
+  → (X : Category.Obj 𝒞) 
+  → (Y : Category.Obj 𝒞)
+  ------------------------ 
+  → Set
 _[_,_] = Category._⇒_
 
 -- 𝒞 [ f ∘ g ] for f g composables arrows of 𝒞
-_[_∘_] : (𝒞 : Category) → ∀ {X Y Z} (f : 𝒞 [ Y , Z ]) → (g : 𝒞 [ X , Y ]) → 𝒞 [ X , Z ]
+_[_∘_] : (𝒞 : Category) 
+
+  → ∀ {X Y Z} (f : 𝒞 [ Y , Z ]) 
+  → (g : 𝒞 [ X , Y ]) 
+  -------------------------------
+  → 𝒞 [ X , Z ]
 _[_∘_] = Category._◯_
 
 
@@ -287,4 +474,4 @@ maybe-functor = record
       → fmap-maybe f ≡ fmap-maybe g
       
     proof-F-resp-≡ f≡g = cong (λ z → fmap-maybe z) f≡g
-    
+          
