@@ -44,8 +44,8 @@ record Functor (F : Set → Set) : Set₁ where
     law-id : ∀ {A} → (x : F A) → (fmap id x) ≡ x
     law-comp : ∀ {A B C} 
 
-      → {g : B → C}
-      → {f : A → B} 
+      → (g : B → C)
+      → (f : A → B) 
       → (x : F A)
       -------------------------------------------
       →  (fmap (g ∘ f) x) ≡ ((fmap g ∘ fmap f) x)
@@ -85,14 +85,14 @@ law-id-maybe (just x) =
 law-comp-maybe :  
 
   ∀ {A B C : Set}
-  {g : B → C} 
-  {f : A → B}       
+  (g : B → C) 
+  (f : A → B)       
   (x : Maybe A)
   --------------------------------------------------------
   → fmap-maybe (g ∘ f) x ≡ (fmap-maybe g ∘ fmap-maybe f) x
   
-law-comp-maybe nothing = refl
-law-comp-maybe {A} {B} {C} {g} {f} (just x) =
+law-comp-maybe g f nothing = refl
+law-comp-maybe {A} {B} {C} g f (just x) =
   begin
     fmap-maybe (g ∘ f) (just x)
   ≡⟨⟩
@@ -145,19 +145,19 @@ law-id-list (cons x xs) = begin
 law-comp-list : 
 
   {A B C : Set} 
-  {g : B → C} 
-  {f : A → B}
+  (g : B → C)
+  (f : A → B)
   (xs : List A)
   ------------------------------------------------------- 
   → fmap-list (g ∘ f) xs ≡ (fmap-list g ∘ fmap-list f) xs
   
-law-comp-list nil = refl
-law-comp-list {A} {B} {C} {g} {f} (cons x xs) =
+law-comp-list g f nil = refl
+law-comp-list {A} {B} {C} g f (cons x xs) =
   begin
     fmap-list (g ∘ f) (cons x xs)
   ≡⟨⟩
     cons ((g ∘ f) x) (fmap-list (g ∘ f) xs)
-  ≡⟨ cong (λ ys → cons ((g ∘ f) x) ys  ) (law-comp-list xs) ⟩
+  ≡⟨ cong (λ ys → cons ((g ∘ f) x) ys  ) (law-comp-list g f xs) ⟩
     (fmap-list g ∘ fmap-list f) (cons x xs)
   ∎ 
 
@@ -262,6 +262,7 @@ f >=> g = λ x →
     in
       (x'' , log <> log')
 
+--Writer law-id---------------------------------------------------------
 law-id-writer : {A M : Set} 
     
   → {{monoidM : Monoid M}} 
@@ -279,6 +280,53 @@ law-id-writer  {{monoidM}} (x , log) = begin
   where
     g = (λ y → id-writer {{monoidM}} (id y))
 
+--Writer law-comp-------------------------------------------------------
+
+-- Let's start by the RHS because it's easier
+law-comp-writer-rhs : ∀ {A B C M : Set}
+    {{monoidM : Monoid M}} 
+    (g : B → C) 
+    (f : A → B) 
+    (x : Writer M A)
+
+    -----------------------------------------------
+    → ((id >=> (λ x₁ → id-writer (g x₁))) ∘
+        (id >=> (λ x₁ → id-writer (f x₁)))) x ≡
+      (id >=> (λ x₁ → id-writer ((g ∘ f) x₁))) x 
+      
+
+law-comp-writer-rhs {A} {B} {C} {M} {{monoidM}} g f (fst , snd) = 
+  begin
+     ((id >=> (λ x₁ → id-writer (g x₁))) ∘
+        (id >=> (λ x₁ → id-writer (f x₁)))) (fst , snd)
+  ≡⟨⟩
+    ( g (f fst) , ((monoidM Monoid.<> snd)
+        (proj₂ (id-writer (f (fst))))) <> mempty) 
+  ≡⟨ cong 
+        (λ z → (g (f fst) , z <> mempty)) 
+        (Monoid.id-monoidˡ monoidM snd)⟩
+        
+    ( g (f fst) , (snd <> mempty))
+  ≡⟨⟩
+    (id >=> (λ x₁ → id-writer ((g ∘ f) x₁))) (fst , snd)
+  ∎
+
+-- Now just use sym
+law-comp-writer : ∀ {A B C M : Set}
+    {{monoidM : Monoid M}} 
+    (g : B → C) 
+    (f : A → B) 
+    (x : Writer M A)
+
+    -----------------------------------------------
+    →  (id >=> (λ x₁ → id-writer ((g ∘ f) x₁))) x ≡
+      ((id >=> (λ x₁ → id-writer (g x₁))) ∘
+        (id >=> (λ x₁ → id-writer (f x₁)))) x
+
+law-comp-writer {A} {B} {C} {M} {{monoidM}} g f (fst , snd) 
+  rewrite sym (
+    law-comp-writer-rhs 
+      {A} {B} {C} {M} {{monoidM}} g f (fst , snd)) = refl
     
  
   
@@ -288,7 +336,7 @@ instance
   WriterFunctor = record {
       fmap = λ f → id >=> (λ x -> id-writer (f x)) 
     ; law-id = law-id-writer
-    ; law-comp = {!   !}
+    ; law-comp = law-comp-writer
     }
   
 
